@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useAppContext } from '../context/Appcontext'
 
 const Message = ({ message }) => {
@@ -429,7 +429,7 @@ export const TypingIndicator = () => {
 
 // Streaming message - shows live text being generated
 export const StreamingMessage = ({ text }) => {
-  const { theme, user } = useAppContext()
+  const { theme } = useAppContext()
   const isDark = theme === 'dark'
 
   // Simple inline render for streaming (no full markdown parse during streaming for performance)

@@ -45,9 +45,15 @@ export const updateChat = async (req, res) => {
             return res.status(401).json({ message: 'User not authorized' });
         }
 
+        // Sanitize the update body to prevent malicious mass-assignment
+        const allowedUpdates = {};
+        if (req.body.name !== undefined) allowedUpdates.name = req.body.name;
+        if (req.body.messages !== undefined) allowedUpdates.messages = req.body.messages;
+        allowedUpdates.updatedAt = new Date();
+
         const updatedChat = await Chat.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            allowedUpdates,
             { new: true }
         );
 

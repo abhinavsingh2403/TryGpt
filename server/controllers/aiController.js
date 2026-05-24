@@ -110,8 +110,11 @@ export const generateResponse = async (req, res) => {
                     res.setHeader('Connection', 'keep-alive');
                     res.flushHeaders();
 
-                    // Send the full text as a single SSE chunk and close
-                    res.write(aiText);
+                    // Send the full text as a single SSE chunk matching Gemini's format
+                    const mockGeminiResponse = {
+                        candidates: [{ content: { parts: [{ text: aiText }] } }]
+                    };
+                    res.write(`data: ${JSON.stringify(mockGeminiResponse)}\n\n`);
                     res.end();
                     return;
                 } catch (fallbackError) {

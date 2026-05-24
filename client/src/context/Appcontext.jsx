@@ -1,8 +1,8 @@
 import { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { dummyChats, dummyUserData } from '../assets/assets'
+
 import { generateAIResponse } from '../utils/aiEngine'
-import { callGeminiAPI, streamGeminiAPI, hasApiKey, getApiKey, setApiKey, validateApiKey } from '../utils/geminiApi'
+
 import { api } from '../utils/api'
 
 const AppContext = createContext()
@@ -44,7 +44,7 @@ export const AppContextProvider = ({ children }) => {
     const [streamingText, setStreamingText] = useState('')
     const [isStreaming, setIsStreaming] = useState(false)
     const [settings, setSettings] = useState(loadSettings)
-    const [apiKeyStatus, setApiKeyStatus] = useState('configured') // Always configured since backend handles it
+    const [apiKeyStatus] = useState('configured') // Always configured since backend handles it
     const [pinnedChats, setPinnedChats] = useState(() => {
         try { return JSON.parse(localStorage.getItem('trygpt-pinned') || '[]') } catch { return [] }
     })
@@ -59,62 +59,39 @@ export const AppContextProvider = ({ children }) => {
         setSettings(prev => ({ ...prev, ...updates }))
     }, [])
 
-    // API Key management
-    const saveApiKey = useCallback(async (key) => {
-        if (!key.trim()) {
-            setApiKey('')
-            setApiKeyStatus('none')
-            return false
-        }
-        setApiKeyStatus('validating')
-        const valid = await validateApiKey(key.trim())
-        if (valid) {
-            setApiKey(key.trim())
-            setApiKeyStatus('configured')
-            return true
-        } else {
-            setApiKeyStatus('invalid')
-            return false
-        }
-    }, [])
 
-    const removeApiKey = useCallback(() => {
-        setApiKey('')
-        setApiKeyStatus('none')
-    }, [])
 
-    const fetchUser = async () => {
-        try {
-            const token = localStorage.getItem('trygpt-token')
-            if (token) {
-                const userData = await api.getMe()
-                setUser(userData)
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const token = localStorage.getItem('trygpt-token')
+                if (token) {
+                    const userData = await api.getMe()
+                    setUser(userData)
+                }
+            } catch {
+                localStorage.removeItem('trygpt-token')
             }
-        } catch {
-            localStorage.removeItem('trygpt-token')
         }
-    }
-    useEffect(() => { fetchUser() }, [])
-
-    const fetchuserchats = async () => {
-        try {
-            const data = await api.getChats()
-            setChats(data)
-            if (data.length > 0) setSelectedChat(data[0])
-        } catch (err) {
-            console.error('Failed to load chats:', err)
-        }
-    }
+        fetchUser()
+    }, [])
 
     useEffect(() => {
-        if (theme === 'dark') document.documentElement.classList.add('dark')
-        else document.documentElement.classList.remove('dark')
-        localStorage.setItem('theme', theme)
-    }, [theme])
-
-    useEffect(() => {
-        if (user) fetchuserchats()
-        else { setChats([]); setSelectedChat(null) }
+        const fetchuserchats = async () => {
+            try {
+                const data = await api.getChats()
+                setChats(data)
+                if (data.length > 0) setSelectedChat(data[0])
+            } catch (err) {
+                console.error('Failed to load chats:', err)
+            }
+        }
+        if (user) {
+            fetchuserchats()
+        } else {
+            setChats([]); 
+            setSelectedChat(null) 
+        }
     }, [user])
 
     useEffect(() => {
@@ -174,6 +151,55 @@ export const AppContextProvider = ({ children }) => {
     }, [user])
 
     // ======= CORE: Send Message with Gemini API + Local Fallback =======
+    // Local AI engine fallback with simulated streaming
+    const fallbackToLocal = useCallback(async (text, updatedChat) => {
+        const { response, isImage, delay } = await generateAIResponse(text, updatedChat.messages)
+
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                if (settings.streamingEnabled && !isImage) {
+                    setIsStreaming(true)
+                    setStreamingText('')
+                    let index = 0
+                    const chunkSize = Math.max(1, Math.floor(response.length / 100))
+                    const interval = setInterval(() => {
+                        index += chunkSize
+                        if (index >= response.length) {
+                            setStreamingText(response)
+                            clearInterval(interval)
+                            setTimeout(async () => {
+                                const assistantMsg = { isImage, isPublished: isImage, role: 'assistant', content: response, timestamp: Date.now() }
+                                const chatWithResponse = { ...updatedChat, messages: [...updatedChat.messages, assistantMsg], updatedAt: new Date().toISOString() }
+                                setSelectedChat(chatWithResponse)
+                                setChats(prev => prev.map(c => c._id === chatWithResponse._id ? chatWithResponse : c))
+                                if (chatWithResponse._id) {
+                                    try { await api.updateChat(chatWithResponse._id, chatWithResponse) } catch (e) { console.error(e) }
+                                }
+                                setIsStreaming(false)
+                                setStreamingText('')
+                                setIsTyping(false)
+                                resolve()
+                            }, 100)
+                        } else {
+                            setStreamingText(response.slice(0, index))
+                        }
+                    }, 15)
+                } else {
+                    const assistantMsg = { isImage, isPublished: isImage, role: 'assistant', content: response, timestamp: Date.now() }
+                    const chatWithResponse = { ...updatedChat, messages: [...updatedChat.messages, assistantMsg], updatedAt: new Date().toISOString() }
+                    setSelectedChat(chatWithResponse)
+                    setChats(prev => prev.map(c => c._id === chatWithResponse._id ? chatWithResponse : c))
+                    setIsTyping(false)
+                    if (chatWithResponse._id) {
+                        api.updateChat(chatWithResponse._id, chatWithResponse).then(resolve).catch(resolve)
+                    } else {
+                        resolve()
+                    }
+                }
+            }, delay)
+        })
+    }, [settings.streamingEnabled])
+
     const sendMessage = useCallback(async (text, attachment = null) => {
         if ((!text.trim() && !attachment) || !selectedChatRef.current || isTyping) return
 
@@ -312,57 +338,9 @@ export const AppContextProvider = ({ children }) => {
             // Use local AI engine
             await fallbackToLocal(text.trim(), updatedChat)
         }
-    }, [isTyping, settings])
+    }, [isTyping, settings, fallbackToLocal])
 
-    // Local AI engine fallback with simulated streaming
-    const fallbackToLocal = useCallback(async (text, updatedChat) => {
-        const { response, isImage, delay } = await generateAIResponse(text, updatedChat.messages)
 
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                if (settings.streamingEnabled && !isImage) {
-                    // Simulate streaming for local responses
-                    setIsStreaming(true)
-                    setStreamingText('')
-                    let index = 0
-                    const chunkSize = Math.max(1, Math.floor(response.length / 100))
-                    const interval = setInterval(() => {
-                        index += chunkSize
-                        if (index >= response.length) {
-                            setStreamingText(response)
-                            clearInterval(interval)
-                            setTimeout(async () => {
-                                const assistantMsg = { isImage, isPublished: isImage, role: 'assistant', content: response, timestamp: Date.now() }
-                                const chatWithResponse = { ...updatedChat, messages: [...updatedChat.messages, assistantMsg], updatedAt: new Date().toISOString() }
-                                setSelectedChat(chatWithResponse)
-                                setChats(prev => prev.map(c => c._id === chatWithResponse._id ? chatWithResponse : c))
-                                if (chatWithResponse._id) {
-                                    try { await api.updateChat(chatWithResponse._id, chatWithResponse) } catch (e) { console.error(e) }
-                                }
-                                setIsStreaming(false)
-                                setStreamingText('')
-                                setIsTyping(false)
-                                resolve()
-                            }, 100)
-                        } else {
-                            setStreamingText(response.slice(0, index))
-                        }
-                    }, 15)
-                } else {
-                    const assistantMsg = { isImage, isPublished: isImage, role: 'assistant', content: response, timestamp: Date.now() }
-                    const chatWithResponse = { ...updatedChat, messages: [...updatedChat.messages, assistantMsg], updatedAt: new Date().toISOString() }
-                    setSelectedChat(chatWithResponse)
-                    setChats(prev => prev.map(c => c._id === chatWithResponse._id ? chatWithResponse : c))
-                    setIsTyping(false)
-                    if (chatWithResponse._id) {
-                        api.updateChat(chatWithResponse._id, chatWithResponse).then(resolve).catch(resolve)
-                    } else {
-                        resolve()
-                    }
-                }
-            }, delay)
-        })
-    }, [settings.streamingEnabled])
 
     // Regenerate the last assistant response
     const regenerateResponse = useCallback(async (messageIndex) => {
@@ -446,7 +424,7 @@ export const AppContextProvider = ({ children }) => {
         createNewChat, deleteChat, sendMessage, editMessage,
         regenerateResponse, stopStreaming, logout, login,
         settings, updateSettings, pinnedChats, togglePinChat, clearAllChats,
-        apiKeyStatus, saveApiKey, removeApiKey,
+        apiKeyStatus,
     }
 
     return (
@@ -456,6 +434,7 @@ export const AppContextProvider = ({ children }) => {
     )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAppContext = () => {
     return useContext(AppContext)
 }

@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 const Loading = () => {
   const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState('Initializing...');
 
   useEffect(() => {
     const duration = 3000;
@@ -23,17 +22,14 @@ const Loading = () => {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    if (progress < 25) {
-      setPhase('Initializing...');
-    } else if (progress < 55) {
-      setPhase('Loading models...');
-    } else if (progress < 85) {
-      setPhase('Almost ready...');
-    } else {
-      setPhase('Welcome!');
-    }
-  }, [progress]);
+  let phase = 'Welcome!';
+  if (progress < 25) {
+    phase = 'Initializing...';
+  } else if (progress < 55) {
+    phase = 'Loading models...';
+  } else if (progress < 85) {
+    phase = 'Almost ready...';
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#111128] to-[#0a0a0a] flex flex-col items-center justify-center relative overflow-hidden">

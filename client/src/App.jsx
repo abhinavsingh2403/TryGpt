@@ -1,6 +1,5 @@
-import React from "react";
 import Sidebar from "./components/sidebar";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route } from 'react-router-dom';
 import Chatbox from "./components/chatbox";
 import Credits from "./pages/credits";
 import Community from "./pages/community";

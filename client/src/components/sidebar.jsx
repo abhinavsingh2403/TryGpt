@@ -1,15 +1,15 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useAppContext } from '../context/Appcontext'
 import { useNavigate } from 'react-router-dom'
 import moment from 'moment'
-import { getApiKey } from '../utils/geminiApi'
+
 
 const Sidebar = () => {
   const navigate = useNavigate()
   const {
     chats, selectedChat, setSelectedChat, theme, setTheme, user,
     sidebarOpen, setSidebarOpen, createNewChat, deleteChat, logout, setChats,
-    settings, updateSettings, apiKeyStatus, saveApiKey, removeApiKey
+    settings, updateSettings,
   } = useAppContext()
   const [search, setSearch] = useState("")
   const [renamingId, setRenamingId] = useState(null)
@@ -17,8 +17,6 @@ const Sidebar = () => {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [collapsed, setCollapsed] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-  const [apiKeyInput, setApiKeyInput] = useState('')
-  const [apiKeySaving, setApiKeySaving] = useState(false)
   const isDark = theme === 'dark'
 
   const handleSelectChat = (chat) => {
@@ -105,7 +103,9 @@ const Sidebar = () => {
                   }`}
                 title={chat.messages.length > 0 ? chat.messages[0].content.slice(0, 40) : chat.name}
               >
-                💬
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
               </button>
             )
           })}

@@ -15,9 +15,6 @@ export function useKeyboardShortcuts(handlers) {
             const isCtrl = e.ctrlKey || e.metaKey
             const isShift = e.shiftKey
 
-            // Don't trigger shortcuts if user is typing in an input/textarea (except Escape)
-            const isEditing = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)
-
             if (e.key === 'Escape' && handlers.closeSidebar) {
                 handlers.closeSidebar()
                 return

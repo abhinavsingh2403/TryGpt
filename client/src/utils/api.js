@@ -74,6 +74,18 @@ export const api = {
         return res.json();
     },
 
+    // PDF Extraction
+    extractPdf: async (file) => {
+        const formData = new FormData()
+        formData.append('pdf', file)
+        const response = await fetch(`${API_URL}/pdf/extract`, {
+            method: 'POST',
+            body: formData,
+        })
+        if (!response.ok) throw new Error('Failed to extract PDF')
+        return response.json()
+    },
+
     // AI Stream
     generateStream: async (messages, personality, onChunk, onDone, onError) => {
         try {
@@ -91,16 +103,34 @@ export const api = {
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
             let fullText = '';
+            let buffer = '';
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                const chunk = decoder.decode(value, { stream: true });
-                fullText += chunk;
-                onChunk(fullText);
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop(); // Keep the last incomplete line
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const dataStr = line.slice(6).trim();
+                        if (!dataStr || dataStr === '[DONE]') continue;
+
+                        try {
+                            const data = JSON.parse(dataStr);
+                            if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                                fullText += data.candidates[0].content.parts[0].text;
+                                onChunk(fullText);
+                            }
+                        } catch (e) {
+                            console.warn('Failed to parse SSE chunk:', e);
+                        }
+                    }
+                }
             }
-            onDone(fullText);
+            onDone(fullText.trim() || fullText);
         } catch (error) {
             onError(error);
         }

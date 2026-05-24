@@ -1,12 +1,15 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import pdfRoutes from './routes/pdfRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,17 +24,34 @@ const app = express();
 if (process.env.MONGODB_URI && process.env.MONGODB_URI !== 'mongodb://localhost:27017/trygpt') {
     connectDB();
 } else {
-    console.warn('⚠️ No custom MONGODB_URI found in .env. Skipping DB connection for now.');
+    console.warn('[WARNING] No custom MONGODB_URI found in .env. Skipping DB connection for now.');
 }
 
-// Middleware
-app.use(cors());
+// Security Middleware
+app.use(helmet());
+app.use(cors({
+    origin: process.env.NODE_ENV === 'production' 
+        ? process.env.CLIENT_URL || 'https://your-production-app.vercel.app'
+        : ['http://localhost:5173', 'http://localhost:3000'],
+    credentials: true
+}));
 app.use(express.json());
+
+// Rate Limiting
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: { message: 'Too many requests from this IP, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+app.use('/api/', apiLimiter);
 
 // Setup Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/pdf', pdfRoutes);
 
 // Serve Frontend in Production
 if (process.env.NODE_ENV === 'production') {

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAppContext } from '../context/Appcontext'
 import Message, { TypingIndicator, StreamingMessage, AIThinkingIndicator } from './message'
 
@@ -9,6 +9,7 @@ const Chatbox = () => {
   } = useAppContext()
   const [input, setInput] = useState('')
   const [attachment, setAttachment] = useState(null)
+  const [isExtractingPdf, setIsExtractingPdf] = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -24,30 +25,53 @@ const Chatbox = () => {
 
   useEffect(() => { inputRef.current?.focus() }, [selectedChat?._id])
 
-  const handleSend = () => {
-    if ((!input.trim() && !attachment) || isTyping) return
-    if (isListening) {
-      recognitionRef.current?.stop()
-      setIsListening(false)
+  const onSubmit = () => {
+    if (!input.trim() && !attachment) return
+
+    if (attachment?.type === 'pdf') {
+      // Append PDF text to the user's prompt
+      const promptText = input.trim() ? input : 'Please analyze this document:'
+      const textToSend = `${promptText}\n\n[Attached Document: ${attachment.name}]\n${attachment.text}`
+      sendMessage(textToSend, null) // don't pass the PDF attachment to the normal image attachment handler
+    } else {
+      sendMessage(input, attachment)
     }
-    if (!selectedChat) createNewChat()
-    sendMessage(input, attachment)
+    
     setInput('')
     setAttachment(null)
     if (inputRef.current) inputRef.current.style.height = 'auto'
   }
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (evt) => {
-      setAttachment({
-        mimeType: file.type,
-        data: evt.target.result // contains base64
-      })
+
+    if (file.type === 'application/pdf') {
+      setIsExtractingPdf(true)
+      try {
+        const result = await api.extractPdf(file)
+        setAttachment({
+          type: 'pdf',
+          name: file.name,
+          text: result.text,
+          pageCount: result.pageCount
+        })
+      } catch (err) {
+        alert("Failed to read PDF: " + err.message)
+      } finally {
+        setIsExtractingPdf(false)
+      }
+    } else {
+      const reader = new FileReader()
+      reader.onload = (evt) => {
+        setAttachment({
+          type: 'image',
+          mimeType: file.type,
+          data: evt.target.result // contains base64
+        })
+      }
+      reader.readAsDataURL(file)
     }
-    reader.readAsDataURL(file)
     e.target.value = null // reset input
   }
 
@@ -111,12 +135,12 @@ const Chatbox = () => {
   const hasMessages = selectedChat?.messages?.length > 0
 
   const prompts = [
-    { icon: '💬', title: 'Write a story', desc: 'about a futuristic city powered by AI', color: 'from-violet-500/10 to-blue-500/10', borderColor: 'border-violet-500/20 hover:border-violet-500/40' },
-    { icon: '🎨', title: 'Generate an image', desc: 'of a sunset over snow-capped mountains', color: 'from-orange-500/10 to-rose-500/10', borderColor: 'border-orange-500/20 hover:border-orange-500/40' },
-    { icon: '💻', title: 'Write code for', desc: 'a REST API with Express and MongoDB', color: 'from-emerald-500/10 to-teal-500/10', borderColor: 'border-emerald-500/20 hover:border-emerald-500/40' },
-    { icon: '🧠', title: 'Explain simply', desc: 'how quantum computing works', color: 'from-cyan-500/10 to-sky-500/10', borderColor: 'border-cyan-500/20 hover:border-cyan-500/40' },
-    { icon: '📋', title: 'Top programming', desc: 'languages to learn in 2025', color: 'from-amber-500/10 to-yellow-500/10', borderColor: 'border-amber-500/20 hover:border-amber-500/40' },
-    { icon: '📧', title: 'Write an email', desc: 'for a job application follow-up', color: 'from-pink-500/10 to-fuchsia-500/10', borderColor: 'border-pink-500/20 hover:border-pink-500/40' },
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>, title: 'Write a story', desc: 'about a futuristic city powered by AI', color: 'from-violet-500/10 to-blue-500/10', borderColor: 'border-violet-500/20 hover:border-violet-500/40' },
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>, title: 'Generate an image', desc: 'of a sunset over snow-capped mountains', color: 'from-orange-500/10 to-rose-500/10', borderColor: 'border-orange-500/20 hover:border-orange-500/40' },
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>, title: 'Write code for', desc: 'a REST API with Express and MongoDB', color: 'from-emerald-500/10 to-teal-500/10', borderColor: 'border-emerald-500/20 hover:border-emerald-500/40' },
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>, title: 'Explain simply', desc: 'how quantum computing works', color: 'from-cyan-500/10 to-sky-500/10', borderColor: 'border-cyan-500/20 hover:border-cyan-500/40' },
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>, title: 'Top programming', desc: 'languages to learn in 2025', color: 'from-amber-500/10 to-yellow-500/10', borderColor: 'border-amber-500/20 hover:border-amber-500/40' },
+    { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>, title: 'Write an email', desc: 'for a job application follow-up', color: 'from-pink-500/10 to-fuchsia-500/10', borderColor: 'border-pink-500/20 hover:border-pink-500/40' },
   ]
 
   const imageCount = selectedChat?.messages?.filter(m => m.isImage)?.length || 0
@@ -198,7 +222,9 @@ const Chatbox = () => {
                   onClick={() => { setInput(`${p.title} ${p.desc}`); inputRef.current?.focus() }}
                   className={`flex items-start gap-3 p-4 rounded-xl bg-gradient-to-br ${p.color} border ${p.borderColor}
                     hover:scale-[1.02] hover:shadow-lg transition-all duration-300 text-left group cursor-pointer`}>
-                  <span className="text-2xl mt-0.5 group-hover:scale-110 transition-transform duration-300">{p.icon}</span>
+                  <div className={`p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-white/50'}`}>
+                    {p.icon}
+                  </div>
                   <div>
                     <p className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-800'}`}>{p.title}</p>
                     <p className={`text-xs mt-0.5 ${isDark ? 'text-white/40' : 'text-gray-500'}`}>{p.desc}</p>
@@ -248,9 +274,25 @@ const Chatbox = () => {
             }`}>
             
             {/* Attachment Preview */}
+            {isExtractingPdf && (
+              <div className="relative inline-flex items-center gap-2 ml-2 mt-1 mb-2 px-3 py-2 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg border border-purple-500/20 text-sm font-medium">
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                Extracting PDF...
+              </div>
+            )}
             {attachment && (
-              <div className="relative inline-block ml-2 mt-1 mb-2">
-                <img src={attachment.data} alt="attachment" className="h-16 w-16 object-cover rounded-lg border border-gray-300 shadow-sm" />
+              <div className="relative inline-flex ml-2 mt-1 mb-2">
+                {attachment.type === 'pdf' ? (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg border border-blue-500/20">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium truncate max-w-[150px]">{attachment.name}</span>
+                      <span className="text-xs opacity-70">{attachment.pageCount} pages</span>
+                    </div>
+                  </div>
+                ) : (
+                  <img src={attachment.data} alt="attachment" className="h-16 w-16 object-cover rounded-lg border border-gray-300 shadow-sm" />
+                )}
                 <button onClick={() => setAttachment(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs cursor-pointer shadow-md">✕</button>
               </div>
             )}
@@ -260,13 +302,13 @@ const Chatbox = () => {
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 className={`p-2 rounded-full transition-colors cursor-pointer ${isDark ? 'text-white/40 hover:bg-white/10 hover:text-white' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'}`}
-                title="Attach Image"
+                title="Attach Document or Image"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                 </svg>
               </button>
-              <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*" className="hidden" />
+              <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*,application/pdf" className="hidden" />
 
               {/* Microphone Button */}
               <button 
