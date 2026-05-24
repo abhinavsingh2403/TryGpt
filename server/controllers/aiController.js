@@ -1,5 +1,32 @@
+import Chat from '../models/chatModel.js';
+
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const DEFAULT_MODEL = 'gemini-2.0-flash';
+
+function cosineSimilarity(vecA, vecB) {
+    let dotProduct = 0, normA = 0, normB = 0;
+    for (let i = 0; i < vecA.length; i++) {
+        dotProduct += vecA[i] * vecB[i];
+        normA += vecA[i] * vecA[i];
+        normB += vecB[i] * vecB[i];
+    }
+    if (normA === 0 || normB === 0) return 0;
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+async function getEmbedding(text, apiKey) {
+    const res = await fetch(`${GEMINI_API_BASE}/models/text-embedding-004:embedContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            model: 'models/text-embedding-004',
+            content: { parts: [{ text }] }
+        })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'Failed to embed prompt');
+    return data.embedding.values;
+}
 
 const SYSTEM_PROMPT = `You are TryGPT, a friendly, helpful, and intelligent AI assistant. 
 You should:
@@ -62,14 +89,41 @@ const buildContents = (messages, personality = 'helpful') => {
 // @access  Private
 export const generateResponse = async (req, res) => {
     try {
-        const { messages, personality, streaming } = req.body;
+        const { chatId, messages, personality, streaming } = req.body;
         const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
             return res.status(500).json({ message: 'Server missing Gemini API Key' });
         }
 
-        const contents = buildContents(messages || [], personality);
+        let augmentedMessages = messages ? JSON.parse(JSON.stringify(messages)) : []; // Deep copy to avoid mutating req.body
+
+        if (chatId) {
+            try {
+                const chat = await Chat.findById(chatId);
+                if (chat && chat.documents && chat.documents.length > 0) {
+                    const lastMsg = augmentedMessages[augmentedMessages.length - 1];
+                    if (lastMsg && lastMsg.role === 'user') {
+                        const promptEmbedding = await getEmbedding(lastMsg.content, apiKey);
+                        const scoredChunks = chat.documents.map(doc => ({
+                            text: doc.text,
+                            score: cosineSimilarity(promptEmbedding, doc.embedding)
+                        }));
+                        scoredChunks.sort((a, b) => b.score - a.score);
+                        const topChunks = scoredChunks.slice(0, 3);
+                        
+                        const contextText = topChunks.map((c, i) => `[Source ${i+1}]: ${c.text}`).join('\n\n');
+                        
+                        lastMsg.content = `${lastMsg.content}\n\n---\nContext from uploaded documents:\n${contextText}\n\nPlease use the above context to answer the question if relevant.`;
+                    }
+                }
+            } catch (err) {
+                console.error('Vector search failed:', err);
+                // Continue without context if RAG fails
+            }
+        }
+
+        const contents = buildContents(augmentedMessages, personality);
 
         const config = {
             contents,

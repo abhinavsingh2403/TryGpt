@@ -269,17 +269,7 @@ const Login = () => {
                 </div>
               )}
 
-              {!isForgotPassword && !isSignup && (
-                <div className="flex justify-end mt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsForgotPassword(true)}
-                    className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-colors"
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
-              )}
+
 
               {/* Submit Button */}
             <button

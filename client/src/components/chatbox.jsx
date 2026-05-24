@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAppContext } from '../context/Appcontext'
+import { api } from '../utils/api'
 import Message, { TypingIndicator, StreamingMessage, AIThinkingIndicator } from './message'
 
 const Chatbox = () => {
@@ -53,8 +54,7 @@ const Chatbox = () => {
         setAttachment({
           type: 'pdf',
           name: file.name,
-          text: result.text,
-          pageCount: result.pageCount
+          documents: result.documents
         })
       } catch (err) {
         alert("Failed to read PDF: " + err.message)
@@ -123,7 +123,7 @@ const Chatbox = () => {
   }
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSubmit() }
   }
 
   const handleInput = (e) => {
@@ -270,7 +270,7 @@ const Chatbox = () => {
           <div className={`flex flex-col p-2 rounded-2xl border shadow-lg transition-all duration-300
             ${isDark
               ? 'border-white/15 bg-white/[0.04] shadow-none focus-within:border-violet-500/50'
-              : 'border-gray-300 bg-white focus-within:border-violet-500 focus-within:shadow-violet-500/10 focus-within:shadow-xl'
+              : 'border-gray-300 bg-white focus-within:border-violet-50 focus-within:shadow-violet-500/10 focus-within:shadow-xl'
             }`}>
             
             {/* Attachment Preview */}
@@ -338,7 +338,7 @@ const Chatbox = () => {
                 <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
               </button>
             ) : (
-              <button onClick={handleSend} disabled={!input.trim() && !attachment}
+              <button onClick={onSubmit} disabled={!input.trim() && !attachment}
                 className={`flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 mb-0.5
                   ${(input.trim() || attachment)
                     ? 'bg-gradient-to-r from-violet-600 to-blue-600 shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 hover:scale-105 cursor-pointer'

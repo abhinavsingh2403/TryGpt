@@ -15,7 +15,7 @@ function generateChatTitle(text) {
         cleaned = cleaned.replace(new RegExp(`^${f}\\s+`, 'i'), '')
     })
     cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
-    if (cleaned.length > 30) cleaned = cleaned.slice(0, 30).replace(/\s+\S*$/, '') + '…'
+    if (cleaned.length > 30) cleaned = cleaned.slice(0, 30).replace(/\s+\S*$/, '') + '...'
     return cleaned || 'New Chat'
 }
 
@@ -89,6 +89,7 @@ export const AppContextProvider = ({ children }) => {
         if (user) {
             fetchuserchats()
         } else {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setChats([]); 
             setSelectedChat(null) 
         }
@@ -222,6 +223,10 @@ export const AppContextProvider = ({ children }) => {
             updatedAt: new Date().toISOString(),
         }
 
+        if (attachment && attachment.type === 'pdf' && attachment.documents) {
+            updatedChat.documents = [...(currentChat.documents || []), ...attachment.documents];
+        }
+
         if (currentChat.messages.length === 0 || currentChat.name === 'New Chat') {
             updatedChat.name = generateChatTitle(text.trim())
         }
@@ -281,6 +286,7 @@ export const AppContextProvider = ({ children }) => {
 
                     await new Promise((resolve, reject) => {
                         api.generateStream(
+                            updatedChat._id,
                             updatedChat.messages,
                             settings.personality,
                             (text) => {
@@ -308,6 +314,7 @@ export const AppContextProvider = ({ children }) => {
                     let finalResponse = ''
                     await new Promise((resolve, reject) => {
                         api.generateStream(
+                            updatedChat._id,
                             updatedChat.messages,
                             settings.personality,
                             () => {},
@@ -371,6 +378,7 @@ export const AppContextProvider = ({ children }) => {
 
                 await new Promise((resolve, reject) => {
                     api.generateStream(
+                        truncatedChat._id,
                         truncatedChat.messages,
                         settings.personality,
                         (text) => {

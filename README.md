@@ -2,12 +2,12 @@
 
 ![TryGPT Banner](client/src/assets/logo.svg)
 
-TryGPT is a full-stack, production-ready AI conversational workspace. It features real-time streaming, image generation, voice recognition, and PDF document chat (RAG). Built to mimic a premium SaaS product, it includes robust authentication, chat persistence, and advanced backend security.
+TryGPT is a full-stack AI conversational workspace. It features real-time streaming, image generation, voice recognition, and true Vector Search PDF document chat (RAG). Built to mimic a premium SaaS product, it includes robust authentication, chat persistence, and advanced backend security.
 
 ## 🚀 Features
 
 - **Real-time AI Streaming**: Utilizes Server-Sent Events (SSE) for fluid, typewriter-style responses from Gemini 2.0 Flash.
-- **Document Chat (PDF)**: Upload PDFs and interact with their contents directly in the chat.
+- **True Vector Search Document Chat (RAG)**: Upload PDFs, extract text, automatically chunk and embed the content using Gemini, and perform cosine similarity vector search to answer questions with precise context.
 - **Voice Mode**: Built-in speech recognition for hands-free interaction.
 - **Image Generation**: Generates high-quality images using Pollinations AI.
 - **Persistent Workspaces**: MongoDB-backed authentication and chat history storage.
@@ -18,7 +18,7 @@ TryGPT is a full-stack, production-ready AI conversational workspace. It feature
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **React 18** (Vite)
+- **React 19** (Vite)
 - **Tailwind CSS 4**
 - **React Router DOM**
 - **Vitest & React Testing Library** (Unit Testing)

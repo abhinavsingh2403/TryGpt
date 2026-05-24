@@ -87,12 +87,12 @@ export const api = {
     },
 
     // AI Stream
-    generateStream: async (messages, personality, onChunk, onDone, onError) => {
+    generateStream: async (chatId, messages, personality, onChunk, onDone, onError) => {
         try {
             const res = await fetch(`${API_URL}/ai/generate`, {
                 method: 'POST',
                 headers: getHeaders(),
-                body: JSON.stringify({ messages, personality, streaming: true }),
+                body: JSON.stringify({ chatId, messages, personality, streaming: true }),
             });
 
             if (!res.ok) {

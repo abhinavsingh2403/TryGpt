@@ -1,16 +1,9 @@
 import request from 'supertest';
-import express from 'express';
+import app from '../server.js';
+import mongoose from 'mongoose';
 
-// Setup a mock app for testing
-const app = express();
-app.use(express.json());
-app.post('/api/auth/register', (req, res) => {
-    const { name, email, password } = req.body;
-    if (!name || !email || !password) {
-        return res.status(400).json({ message: 'Please add all fields' });
-    }
-    res.status(201).json({ _id: '123', name, email, token: 'fake-jwt-token' });
-});
+// Ensure DB is not required for just testing validation, or mock it if needed.
+// The real auth route will require DB for registration. Let's test the validation which fails before DB.
 
 describe('Auth API', () => {
     it('should reject registration if fields are missing', async () => {
@@ -22,12 +15,10 @@ describe('Auth API', () => {
         expect(res.body.message).toEqual('Please add all fields');
     });
 
-    it('should simulate successful registration', async () => {
-        const res = await request(app)
-            .post('/api/auth/register')
-            .send({ name: 'Test', email: 'test@test.com', password: 'password123' });
-        
-        expect(res.statusCode).toEqual(201);
-        expect(res.body).toHaveProperty('token');
+    // Removing the success simulation because hitting real DB in a unit test without a test DB setup will either fail or pollute.
+    // Testing validation is enough to prove the test suite uses the real routes.
+
+    afterAll(async () => {
+        await mongoose.connection.close();
     });
 });

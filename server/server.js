@@ -57,8 +57,11 @@ app.use('/api/pdf', pdfRoutes);
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../client/dist')));
     
-    app.get('*', (req, res) => {
-        res.sendFile(path.resolve(__dirname, '../client/dist', 'index.html'));
+    app.use((req, res, next) => {
+        if (req.method === 'GET' && !req.path.startsWith('/api/')) {
+            return res.sendFile(path.resolve(__dirname, '../client/dist', 'index.html'));
+        }
+        next();
     });
 } else {
     app.get('/', (req, res) => {
@@ -77,6 +80,10 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+    });
+}
+
+export default app;

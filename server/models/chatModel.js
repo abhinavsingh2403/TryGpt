@@ -24,6 +24,17 @@ const messageSchema = new mongoose.Schema({
     }
 });
 
+const documentChunkSchema = new mongoose.Schema({
+    text: {
+        type: String,
+        required: true,
+    },
+    embedding: {
+        type: [Number],
+        required: true,
+    }
+});
+
 const chatSchema = new mongoose.Schema(
     {
         userId: {
@@ -36,6 +47,7 @@ const chatSchema = new mongoose.Schema(
             default: 'New Chat',
         },
         messages: [messageSchema],
+        documents: [documentChunkSchema],
     },
     {
         timestamps: true,

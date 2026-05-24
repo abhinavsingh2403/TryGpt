@@ -1,18 +1,18 @@
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect } from 'vitest';
 import App from '../App';
-import { AppProvider } from '../context/Appcontext';
+import { AppContextProvider } from '../context/Appcontext';
 
 describe('App Component', () => {
   it('renders without crashing', () => {
     // Mock the context provider
     const MockProvider = ({ children }) => (
-      <AppProvider>
-        <BrowserRouter>
+      <BrowserRouter>
+        <AppContextProvider>
           {children}
-        </BrowserRouter>
-      </AppProvider>
+        </AppContextProvider>
+      </BrowserRouter>
     );
 
     render(<App />, { wrapper: MockProvider });
