@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useAppContext } from '../context/Appcontext'
-import Message, { TypingIndicator, StreamingMessage } from './message'
+import Message, { TypingIndicator, StreamingMessage, AIThinkingIndicator } from './message'
 
 const Chatbox = () => {
   const {
-    selectedChat, sendMessage, isTyping, isStreaming, streamingText, stopStreaming,
+    selectedChat, sendMessage, isTyping, isThinking, isStreaming, streamingText, stopStreaming,
     user, setSidebarOpen, createNewChat, theme, apiKeyStatus
   } = useAppContext()
   const [input, setInput] = useState('')
@@ -229,7 +229,8 @@ const Chatbox = () => {
               <StreamingMessage text={streamingText} />
             )}
             {/* Typing dots (when waiting for API, before stream starts) */}
-            {isTyping && !isStreaming && <TypingIndicator />}
+            {isThinking && <AIThinkingIndicator />}
+            {isTyping && !isThinking && !isStreaming && <TypingIndicator />}
             <div ref={messagesEndRef} />
           </div>
         )}

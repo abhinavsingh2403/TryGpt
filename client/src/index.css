@@ -131,6 +131,32 @@
   animation: gradient-shift 4s ease infinite;
 }
 
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.glass-panel-dark {
+  background: rgba(14, 14, 26, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+.glow-border:focus-within {
+  box-shadow: 0 0 15px rgba(164, 86, 247, 0.5), inset 0 0 10px rgba(164, 86, 247, 0.2);
+  border-color: rgba(164, 86, 247, 0.8);
+}
+
 /* Typing dots */
 .typing-dot {
   display: inline-block;

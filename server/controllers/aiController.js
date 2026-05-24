@@ -93,8 +93,31 @@ export const generateResponse = async (req, res) => {
             );
 
             if (!response.ok) {
-                const errorText = await response.text();
-                return res.status(response.status).json({ message: `Gemini API Error: ${errorText}` });
+                // Gemini Failed (Quota Exceeded) - Fallback to Pollinations
+                try {
+                    let promptText = 'You are TryGPT, a helpful AI assistant. Format your answers in markdown. Keep them accurate and helpful.\n\n';
+                    const historyPayload = messages.slice(-10).filter(m => !m.isImage);
+                    for (const m of historyPayload) {
+                        promptText += `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}\n`;
+                    }
+
+                    const polRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(promptText)}`);
+                    const aiText = await polRes.text();
+
+                    // Set headers for Server-Sent Events
+                    res.setHeader('Content-Type', 'text/event-stream');
+                    res.setHeader('Cache-Control', 'no-cache');
+                    res.setHeader('Connection', 'keep-alive');
+                    res.flushHeaders();
+
+                    // Send the full text as a single SSE chunk and close
+                    res.write(aiText);
+                    res.end();
+                    return;
+                } catch (fallbackError) {
+                    const errorText = await response.text();
+                    return res.status(response.status).json({ message: `Gemini API Error: ${errorText}` });
+                }
             }
 
             // Set headers for Server-Sent Events
@@ -130,7 +153,21 @@ export const generateResponse = async (req, res) => {
             const data = await response.json();
             
             if (!response.ok) {
-                return res.status(response.status).json({ message: data.error?.message || 'API Error' });
+                // Gemini Failed (Quota Exceeded) - Fallback to Pollinations
+                try {
+                    let promptText = 'You are TryGPT, a helpful AI assistant. Format your answers in markdown. Keep them accurate and helpful.\n\n';
+                    const historyPayload = messages.slice(-10).filter(m => !m.isImage);
+                    for (const m of historyPayload) {
+                        promptText += `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}\n`;
+                    }
+
+                    const polRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(promptText)}`);
+                    const aiText = await polRes.text();
+                    
+                    return res.json({ response: aiText });
+                } catch (fallbackError) {
+                    return res.status(response.status).json({ message: data.error?.message || 'API Error' });
+                }
             }
 
             const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';

@@ -40,6 +40,7 @@ export const AppContextProvider = ({ children }) => {
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [isTyping, setIsTyping] = useState(false)
+    const [isThinking, setIsThinking] = useState(false)
     const [streamingText, setStreamingText] = useState('')
     const [isStreaming, setIsStreaming] = useState(false)
     const [settings, setSettings] = useState(loadSettings)
@@ -201,7 +202,8 @@ export const AppContextProvider = ({ children }) => {
 
         setSelectedChat(updatedChat)
         setChats(prev => prev.map(c => c._id === updatedChat._id ? updatedChat : c))
-        setIsTyping(true)
+        setIsThinking(true)
+        setIsTyping(false)
 
         // Check if this is an image request (always use local engine for images)
         const lower = text.toLowerCase()
@@ -216,7 +218,7 @@ export const AppContextProvider = ({ children }) => {
                 await api.updateChat(updatedChat._id, updatedChat)
             }
             // Use local engine for image generation (Pollinations AI)
-            const { response, isImage, delay } = generateAIResponse(text.trim(), updatedChat.messages)
+            const { response, isImage, delay } = await generateAIResponse(text.trim(), updatedChat.messages)
             setTimeout(async () => {
                 const assistantMsg = { isImage, isPublished: isImage, role: 'assistant', content: response, timestamp: Date.now() }
                 const chatWithResponse = { ...updatedChat, messages: [...updatedChat.messages, assistantMsg], updatedAt: new Date().toISOString() }
@@ -226,6 +228,7 @@ export const AppContextProvider = ({ children }) => {
                 if (chatWithResponse._id) {
                     await api.updateChat(chatWithResponse._id, chatWithResponse)
                 }
+                setIsThinking(false)
                 setIsTyping(false)
             }, delay)
             return
@@ -256,6 +259,7 @@ export const AppContextProvider = ({ children }) => {
                             settings.personality,
                             (text) => {
                                 if (controller.signal.aborted) reject(new Error('Aborted'))
+                                if (text.length > 0) setIsThinking(false) // First chunk arrived, stop thinking
                                 setStreamingText(text)
                             },
                             (fullText) => {
@@ -302,6 +306,7 @@ export const AppContextProvider = ({ children }) => {
                 setIsStreaming(false)
                 setStreamingText('')
                 setIsTyping(false)
+                setIsThinking(false)
             }
         } else {
             // Use local AI engine
@@ -311,7 +316,7 @@ export const AppContextProvider = ({ children }) => {
 
     // Local AI engine fallback with simulated streaming
     const fallbackToLocal = useCallback(async (text, updatedChat) => {
-        const { response, isImage, delay } = generateAIResponse(text, updatedChat.messages)
+        const { response, isImage, delay } = await generateAIResponse(text, updatedChat.messages)
 
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -437,7 +442,7 @@ export const AppContextProvider = ({ children }) => {
     const value = {
         navigate, user, setUser, chats, setChats,
         selectedChat, setSelectedChat, theme, setTheme,
-        sidebarOpen, setSidebarOpen, isTyping, isStreaming, streamingText,
+        sidebarOpen, setSidebarOpen, isTyping, isThinking, isStreaming, streamingText,
         createNewChat, deleteChat, sendMessage, editMessage,
         regenerateResponse, stopStreaming, logout, login,
         settings, updateSettings, pinnedChats, togglePinChat, clearAllChats,

@@ -35,7 +35,7 @@ const Credits = () => {
   ]
 
   return (
-    <div className={`flex flex-col min-h-screen ${isDark ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
+    <div className={`flex flex-col h-full overflow-y-auto ${isDark ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
       {/* Header */}
       <div className="relative text-center pt-12 pb-8 px-6">
         {/* Back button */}

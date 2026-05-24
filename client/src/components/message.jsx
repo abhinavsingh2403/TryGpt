@@ -6,6 +6,7 @@ const Message = ({ message }) => {
   const [copied, setCopied] = useState(false)
   const [copiedMsg, setCopiedMsg] = useState(false)
   const [reaction, setReaction] = useState(null)
+  const [imageLoaded, setImageLoaded] = useState(false)
   const isUser = message.role === 'user'
   const isDark = theme === 'dark'
 
@@ -250,29 +251,38 @@ const Message = ({ message }) => {
     return (
       <div className={`flex gap-3 mb-6 animate-fade-in ${isUser ? 'flex-row-reverse' : ''}`}>
         <Avatar isUser={isUser} user={user} isDark={isDark} />
-        <div className="max-w-sm rounded-2xl overflow-hidden shadow-xl relative group">
+        <div className={`max-w-sm rounded-2xl overflow-hidden shadow-xl relative group min-h-[250px] min-w-[250px] flex items-center justify-center ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
+          {!imageLoaded && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+              <div className="w-8 h-8 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+              <span className={`text-xs font-medium animate-pulse ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Painting your masterpiece...</span>
+            </div>
+          )}
           <img
             src={message.content}
             alt="AI Generated"
-            className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
+            onLoad={() => setImageLoaded(true)}
+            className={`w-full h-auto object-cover transition-all duration-500 group-hover:scale-105 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
           />
-          {message.isPublished && (
+          {message.isPublished && imageLoaded && (
             <div className="absolute top-3 left-3 bg-emerald-500/90 text-white text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm font-medium shadow-lg">
               ✓ Published
             </div>
           )}
-          <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-3">
-            <span className="text-white/70 text-[10px]">{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-            <div className="flex gap-1.5">
-              <button 
-                onClick={handleDownload}
-                className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors cursor-pointer" title="Download">
-                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-              </button>
+          {imageLoaded && (
+            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-3">
+              <span className="text-white/70 text-[10px]">{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <div className="flex gap-1.5">
+                <button 
+                  onClick={handleDownload}
+                  className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors cursor-pointer" title="Download">
+                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     )
@@ -370,6 +380,33 @@ const Avatar = ({ isUser, user, isDark }) => (
     )}
   </div>
 )
+
+// AI Thinking Indicator
+export const AIThinkingIndicator = () => {
+  const { theme } = useAppContext()
+  const isDark = theme === 'dark'
+
+  return (
+    <div className="flex gap-3 mb-5 animate-fade-in">
+      <Avatar isUser={false} isDark={isDark} />
+      <div className={`rounded-2xl rounded-tl-sm px-6 py-4 border relative overflow-hidden flex items-center gap-3 ${isDark ? 'bg-white/[0.03] border-white/10' : 'bg-gray-100/50 border-gray-200'}`}>
+        {/* Shimmer effect */}
+        <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+        
+        {/* Glowing Orb */}
+        <div className="relative flex items-center justify-center w-5 h-5">
+          <div className="absolute inset-0 bg-purple-500 rounded-full animate-ping opacity-20"></div>
+          <div className="w-2.5 h-2.5 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(168,85,247,0.5)]"></div>
+        </div>
+
+        {/* Dynamic Text */}
+        <span className={`text-sm font-medium tracking-wide animate-pulse-slow ${isDark ? 'bg-gradient-to-r from-purple-300 via-indigo-300 to-purple-300 bg-clip-text text-transparent' : 'bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent'}`}>
+          Analyzing request...
+        </span>
+      </div>
+    </div>
+  )
+}
 
 // Typing indicator
 export const TypingIndicator = () => {

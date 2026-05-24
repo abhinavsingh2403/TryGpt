@@ -1503,85 +1503,45 @@ Would you like me to dive deeper into any of these points? I'm happy to elaborat
 
 // ===== MAIN EXPORT =====
 
-export function generateAIResponse(text, messageHistory = []) {
-    // Check for follow-up first
-    const followUpContext = detectFollowUp(text, messageHistory)
-    if (followUpContext) {
+export async function generateAIResponse(text, messageHistory = []) {
+    const lower = text.toLowerCase()
+    
+    // Check if image request
+    const isImageRequest = (
+        (lower.includes('generate') || lower.includes('create') || lower.includes('make') || lower.includes('draw')) &&
+        (lower.includes('image') || lower.includes('picture') || lower.includes('photo') || lower.includes('art'))
+    )
+
+    if (isImageRequest) {
+        const imgRes = generateImageResponse(text)
         return {
-            response: generateFollowUpResponse(followUpContext),
-            isImage: false,
-            delay: 1500 + Math.random() * 1000,
+            response: imgRes.response,
+            isImage: true,
+            delay: 100
         }
     }
 
-    const intent = detectIntent(text)
+    try {
+        let promptText = 'You are TryGPT, a helpful AI assistant. Format your answers in markdown. Keep them accurate and helpful.\n\n'
+        
+        const historyPayload = messageHistory.slice(-10).filter(m => !m.isImage)
+        for (const m of historyPayload) {
+            promptText += `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}\n`
+        }
+        promptText += `User: ${text}\nAssistant:`
 
-    let response
-    let isImage = false
-    let delay = 1200 + Math.random() * 800 // 1.2 - 2.0 seconds base
+        const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(promptText)}`)
 
-    switch (intent) {
-        case 'greeting':
-            response = generateGreeting()
-            delay = 800 + Math.random() * 400
-            break
-
-        case 'capabilities':
-            response = generateCapabilities()
-            delay = 1000 + Math.random() * 500
-            break
-
-        case 'thanks':
-            response = generateThanks()
-            delay = 600 + Math.random() * 400
-            break
-
-        case 'image':
-            const imgRes = generateImageResponse(text)
-            response = imgRes.response
-            isImage = true
-            delay = 2000 + Math.random() * 1500
-            break
-
-        case 'translate':
-            response = generateTranslationResponse(text)
-            delay = 1200 + Math.random() * 800
-            break
-
-        case 'summarize':
-            response = generateSummarizationResponse(text, messageHistory)
-            delay = 1500 + Math.random() * 1000
-            break
-
-        case 'code':
-            response = generateCodeResponse(text)
-            delay = 2000 + Math.random() * 1000
-            break
-
-        case 'explain':
-            response = generateExplanation(text)
-            delay = 1500 + Math.random() * 1000
-            break
-
-        case 'list':
-            response = generateListResponse(text)
-            delay = 1500 + Math.random() * 1000
-            break
-
-        case 'creative':
-            response = generateCreativeResponse(text)
-            delay = 2000 + Math.random() * 1000
-            break
-
-        case 'math':
-            response = generateMathResponse(text)
-            delay = 800 + Math.random() * 500
-            break
-
-        default:
-            response = generateGeneralResponse(text, messageHistory)
-            delay = 1200 + Math.random() * 800
+        if (!res.ok) throw new Error('Pollinations API failed')
+        const aiText = await res.text()
+        
+        if (aiText.toLowerCase().includes('limit reached') || aiText.toLowerCase().includes('rate limit') || aiText.toLowerCase().includes('quota')) {
+            return { response: "⚠️ **Public API Limit Reached**\n\nThe free public backup servers are currently overloaded. To get unlimited, lightning-fast responses (including Multimodal Vision), please update your **Gemini API Key** in the Settings menu!", isImage: false, delay: 100 }
+        }
+        
+        return { response: aiText, isImage: false, delay: 100 }
+    } catch (e) {
+        console.error("Local engine text generation failed:", e)
+        return { response: "I'm having trouble connecting to the backup AI network right now. Please try again later.", isImage: false, delay: 100 }
     }
-
-    return { response, isImage, delay }
 }
