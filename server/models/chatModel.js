@@ -41,6 +41,7 @@ const chatSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             required: true,
             ref: 'User',
+            index: true,
         },
         name: {
             type: String,
