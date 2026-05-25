@@ -30,10 +30,9 @@ const Chatbox = () => {
     if (!input.trim() && !attachment) return
 
     if (attachment?.type === 'pdf') {
-      // Append PDF text to the user's prompt
       const promptText = input.trim() ? input : 'Please analyze this document:'
-      const textToSend = `${promptText}\n\n[Attached Document: ${attachment.name}]\n${attachment.text}`
-      sendMessage(textToSend, null) // don't pass the PDF attachment to the normal image attachment handler
+      const textToSend = `${promptText}\n\n[Attached Document: ${attachment.name}]`
+      sendMessage(textToSend, attachment)
     } else {
       sendMessage(input, attachment)
     }
@@ -54,7 +53,8 @@ const Chatbox = () => {
         setAttachment({
           type: 'pdf',
           name: file.name,
-          documents: result.documents
+          documents: result.documents,
+          pageCount: result.pageCount,
         })
       } catch (err) {
         alert("Failed to read PDF: " + err.message)

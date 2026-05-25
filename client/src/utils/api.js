@@ -80,19 +80,23 @@ export const api = {
         formData.append('pdf', file)
         const response = await fetch(`${API_URL}/pdf/extract`, {
             method: 'POST',
+            headers: {
+                ...(localStorage.getItem('trygpt-token') ? { Authorization: `Bearer ${localStorage.getItem('trygpt-token')}` } : {}),
+            },
             body: formData,
         })
-        if (!response.ok) throw new Error('Failed to extract PDF')
+        if (!response.ok) throw new Error((await response.json()).message || 'Failed to extract PDF')
         return response.json()
     },
 
     // AI Stream
-    generateStream: async (chatId, messages, personality, onChunk, onDone, onError) => {
+    generateStream: async (chatId, messages, personality, onChunk, onDone, onError, signal) => {
         try {
             const res = await fetch(`${API_URL}/ai/generate`, {
                 method: 'POST',
                 headers: getHeaders(),
                 body: JSON.stringify({ chatId, messages, personality, streaming: true }),
+                signal,
             });
 
             if (!res.ok) {

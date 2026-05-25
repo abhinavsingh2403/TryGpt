@@ -14,17 +14,21 @@ import pdfRoutes from './routes/pdfRoutes.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables
-dotenv.config();
+// Load environment variables without letting .env override Jest's NODE_ENV=test.
+dotenv.config({ override: false });
 
 // Initialize Express
 const app = express();
 
-// Connect to Database (will fail gracefully if no URI provided yet)
-if (process.env.MONGODB_URI && process.env.MONGODB_URI !== 'mongodb://localhost:27017/trygpt') {
-    connectDB();
+// Connect to Database outside tests when a usable URI is configured.
+if (process.env.NODE_ENV !== 'test' && process.env.MONGODB_URI && process.env.MONGODB_URI !== 'mongodb://localhost:27017/trygpt') {
+    connectDB().catch(() => {
+        process.exit(1);
+    });
 } else {
-    console.warn('[WARNING] No custom MONGODB_URI found in .env. Skipping DB connection for now.');
+    if (process.env.NODE_ENV !== 'test') {
+        console.warn('[WARNING] No custom MONGODB_URI found in .env. Skipping DB connection for now.');
+    }
 }
 
 // Security Middleware

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAppContext } from '../context/Appcontext'
 import { useNavigate } from 'react-router-dom'
 import moment from 'moment'
+import { api } from '../utils/api'
 
 
 const Sidebar = () => {
@@ -42,11 +43,17 @@ const Sidebar = () => {
     setRenameValue(chat.messages.length > 0 ? chat.messages[0].content.slice(0, 40) : chat.name)
   }
 
-  const finishRename = (chatId) => {
-    if (renameValue.trim()) {
-      setChats(prev => prev.map(c => c._id === chatId ? { ...c, name: renameValue.trim() } : c))
+  const finishRename = async (chatId) => {
+    const name = renameValue.trim()
+    if (name) {
+      setChats(prev => prev.map(c => c._id === chatId ? { ...c, name } : c))
       if (selectedChat?._id === chatId) {
-        setSelectedChat(prev => ({ ...prev, name: renameValue.trim() }))
+        setSelectedChat(prev => ({ ...prev, name }))
+      }
+      try {
+        await api.updateChat(chatId, { name })
+      } catch (error) {
+        console.error('Failed to rename chat:', error)
       }
     }
     setRenamingId(null)

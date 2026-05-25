@@ -49,6 +49,7 @@ export const updateChat = async (req, res) => {
         const allowedUpdates = {};
         if (req.body.name !== undefined) allowedUpdates.name = req.body.name;
         if (req.body.messages !== undefined) allowedUpdates.messages = req.body.messages;
+        if (req.body.documents !== undefined) allowedUpdates.documents = req.body.documents;
         allowedUpdates.updatedAt = new Date();
 
         const updatedChat = await Chat.findByIdAndUpdate(

@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import { extractPdfText } from '../controllers/pdfController.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -20,7 +21,7 @@ const upload = multer({
 
 // @route   POST /api/pdf/extract
 // @desc    Extract text from uploaded PDF
-// @access  Public (or protected if needed, but since it doesn't touch DB, public is fine for now)
-router.post('/extract', upload.single('pdf'), extractPdfText);
+// @access  Private
+router.post('/extract', protect, upload.single('pdf'), extractPdfText);
 
 export default router;

@@ -52,6 +52,7 @@ export const AppContextProvider = ({ children }) => {
     const abortControllerRef = useRef(null)
 
     useEffect(() => { selectedChatRef.current = selectedChat }, [selectedChat])
+    useEffect(() => { localStorage.setItem('theme', theme) }, [theme])
     useEffect(() => { localStorage.setItem('trygpt-settings', JSON.stringify(settings)) }, [settings])
     useEffect(() => { localStorage.setItem('trygpt-pinned', JSON.stringify(pinnedChats)) }, [pinnedChats])
 
@@ -154,7 +155,7 @@ export const AppContextProvider = ({ children }) => {
     // ======= CORE: Send Message with Gemini API + Local Fallback =======
     // Local AI engine fallback with simulated streaming
     const fallbackToLocal = useCallback(async (text, updatedChat) => {
-        const { response, isImage, delay } = await generateAIResponse(text, updatedChat.messages)
+        const { response, isImage, delay } = await generateAIResponse(text)
 
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -210,7 +211,7 @@ export const AppContextProvider = ({ children }) => {
             role: 'user', content: text.trim(), timestamp: Date.now(),
         }
         
-        if (attachment) {
+        if (attachment?.type === 'image') {
             userMsg.inlineData = {
                 mimeType: attachment.mimeType,
                 data: attachment.data // base64 string
@@ -234,7 +235,7 @@ export const AppContextProvider = ({ children }) => {
         setSelectedChat(updatedChat)
         setChats(prev => prev.map(c => c._id === updatedChat._id ? updatedChat : c))
         setIsThinking(true)
-        setIsTyping(false)
+        setIsTyping(true)
 
         // Check if this is an image request (always use local engine for images)
         const lower = text.toLowerCase()
@@ -249,7 +250,7 @@ export const AppContextProvider = ({ children }) => {
                 await api.updateChat(updatedChat._id, updatedChat)
             }
             // Use local engine for image generation (Pollinations AI)
-            const { response, isImage, delay } = await generateAIResponse(text.trim(), updatedChat.messages)
+            const { response, isImage, delay } = await generateAIResponse(text.trim())
             setTimeout(async () => {
                 const assistantMsg = { isImage, isPublished: isImage, role: 'assistant', content: response, timestamp: Date.now() }
                 const chatWithResponse = { ...updatedChat, messages: [...updatedChat.messages, assistantMsg], updatedAt: new Date().toISOString() }
@@ -313,7 +314,8 @@ export const AppContextProvider = ({ children }) => {
                                 setIsStreaming(false)
                                 setStreamingText('')
                                 resolve()
-                            }
+                            },
+                            controller.signal
                         )
                     })
 
@@ -334,7 +336,8 @@ export const AppContextProvider = ({ children }) => {
                             settings.personality,
                             () => {},
                             (fullText) => { finalResponse = fullText; resolve() },
-                            (err) => reject(err)
+                            (err) => reject(err),
+                            controller.signal
                         )
                     })
                     if (!controller.signal.aborted) {
@@ -381,6 +384,8 @@ export const AppContextProvider = ({ children }) => {
 
         const useApi = settings.useGemini
         if (useApi) {
+            const controller = new AbortController()
+            abortControllerRef.current = controller
             try {
                 // Save user message to DB first
                 if (truncatedChat._id) {
@@ -404,11 +409,12 @@ export const AppContextProvider = ({ children }) => {
                             finalResponse = fullText
                             resolve()
                         },
-                        (err) => reject(err)
+                        (err) => reject(err),
+                        controller.signal
                     )
                 })
 
-                if (!abortControllerRef.current?.signal.aborted) {
+                if (!controller.signal.aborted) {
                     const assistantMsg = { isImage: false, isPublished: false, role: 'assistant', content: finalResponse, timestamp: Date.now() }
                     const chatWithResponse = { ...truncatedChat, messages: [...truncatedChat.messages, assistantMsg], updatedAt: new Date().toISOString() }
                     setSelectedChat(chatWithResponse)
@@ -418,6 +424,7 @@ export const AppContextProvider = ({ children }) => {
             } catch {
                 await fallbackToLocal(userMsg.content, truncatedChat)
             } finally {
+                abortControllerRef.current = null
                 setIsStreaming(false)
                 setStreamingText('')
                 setIsTyping(false)

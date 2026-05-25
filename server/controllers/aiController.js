@@ -211,20 +211,17 @@ export const generateResponse = async (req, res) => {
                 }
             );
 
-            const data = await response.json();
+            const rawBody = await response.text();
+            let data = {};
+            try {
+                data = rawBody ? JSON.parse(rawBody) : {};
+            } catch (e) {
+                if (response.ok) throw new Error('AI response was not valid JSON');
+            }
             
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Gemini API Error:', errorText);
-                let cleanMessage = 'AI Generation failed';
-                try {
-                    const errorJson = JSON.parse(errorText);
-                    if (errorJson.error && errorJson.error.message) {
-                        cleanMessage = errorJson.error.message;
-                    }
-                } catch (e) {
-                    cleanMessage = errorText;
-                }
+                console.error('Gemini API Error:', rawBody);
+                let cleanMessage = data.error?.message || rawBody || 'AI Generation failed';
                 
                 if (cleanMessage.includes('exceeded your current quota') || response.status === 429) {
                     cleanMessage = "You have exceeded the free tier rate limit for Gemini API (15 requests per minute). Please wait a few seconds and try again.";
