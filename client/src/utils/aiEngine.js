@@ -14,9 +14,12 @@ import ai_image12 from '../assets/ai_image12.jpg'
 const aiImages = [ai_image1, ai_image2, ai_image3, ai_image4, ai_image5, ai_image6, ai_image7, ai_image8, ai_image9, ai_image10, ai_image11, ai_image12]
 
 function generateImageResponse(prompt) {
-    const randomImage = aiImages[Math.floor(Math.random() * aiImages.length)];
+    const cleanPrompt = prompt.replace(/generate|create|make|draw|an image of|a picture of/gi, '').trim() || 'beautiful scenery';
+    // Use Pollinations AI for instant, real image generation via URL
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 1000000)}`;
+    
     return {
-        response: `Here is the image you requested for: "${prompt.replace(/generate|create|make|draw|an image of|a picture of/gi, '').trim()}"\n\n![Generated Image](${randomImage})`,
+        response: `Here is the image you requested for: "${cleanPrompt}"\n\n![Generated Image](${imageUrl})`,
         isImage: true
     };
 }
