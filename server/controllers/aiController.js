@@ -183,18 +183,32 @@ export const generateResponse = async (req, res) => {
             res.setHeader('Connection', 'keep-alive');
             res.flushHeaders();
 
-            response.body.on('data', (chunk) => {
-                res.write(chunk);
-            });
-
-            response.body.on('end', () => {
-                res.end();
-            });
-
-            response.body.on('error', (err) => {
-                console.error('Stream error:', err);
-                res.end();
-            });
+            if (typeof response.body.on === 'function') {
+                // Fallback for node-fetch if it's used
+                response.body.on('data', (chunk) => res.write(chunk));
+                response.body.on('end', () => res.end());
+                response.body.on('error', (err) => {
+                    console.error('Stream error:', err);
+                    res.end();
+                });
+            } else {
+                // Native fetch ReadableStream
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) {
+                            res.end();
+                            break;
+                        }
+                        res.write(decoder.decode(value, { stream: true }));
+                    }
+                } catch (err) {
+                    console.error('Stream reading error:', err);
+                    res.end();
+                }
+            }
 
         } else {
             // Non-streaming implementation
