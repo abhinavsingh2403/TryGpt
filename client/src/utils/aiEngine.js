@@ -43,26 +43,9 @@ export async function generateAIResponse(text, messageHistory = []) {
     }
 
     try {
-        let promptText = 'You are TryGPT, a helpful AI assistant. Format your answers in markdown. Keep them accurate and helpful.\n\n'
-        
-        const historyPayload = messageHistory.slice(-10).filter(m => !m.isImage)
-        for (const m of historyPayload) {
-            promptText += `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}\n`
-        }
-        promptText += `User: ${text}\nAssistant:`
-
-        const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(promptText)}`)
-
-        if (!res.ok) throw new Error('Pollinations API failed')
-        const aiText = await res.text()
-        
-        if (aiText.toLowerCase().includes('limit reached') || aiText.toLowerCase().includes('rate limit') || aiText.toLowerCase().includes('quota')) {
-            return { response: "⚠️ **Public API Limit Reached**\n\nThe free public backup servers are currently overloaded. To get unlimited, lightning-fast responses (including Multimodal Vision), please update your **Gemini API Key** in the Settings menu!", isImage: false, delay: 100 }
-        }
-        
-        return { response: aiText, isImage: false, delay: 100 }
+        return { response: "⚠️ **Gemini API Error / Missing Key**\n\nThe AI request failed. Please check your **Gemini API Key** in the settings, or ensure you haven't exceeded your rate limits. The local backup text engine has been deprecated.", isImage: false, delay: 100 }
     } catch (e) {
         console.error("Local engine text generation failed:", e)
-        return { response: "I'm having trouble connecting to the backup AI network right now. Please try again later.", isImage: false, delay: 100 }
+        return { response: "I'm having trouble connecting to the AI network right now. Please try again later.", isImage: false, delay: 100 }
     }
 }
