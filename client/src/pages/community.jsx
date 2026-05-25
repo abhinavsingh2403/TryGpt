@@ -18,10 +18,14 @@ const Community = () => {
   ]
 
   const galleryImages = [
-    ...dummyPublishedImages,
+    ...dummyPublishedImages.map((img, i) => ({
+      ...img,
+      category: ['Landscapes', 'Tech', 'People'][i % 3],
+    })),
     ...dummyPublishedImages.map((img, i) => ({
       ...img,
       userName: fakeUsernames[i % fakeUsernames.length],
+      category: ['Tech', 'People', 'Landscapes'][i % 3],
     })),
   ]
 
@@ -38,6 +42,34 @@ const Community = () => {
   }
 
   const uniqueCreators = [...new Set(galleryImages.map((img) => img.userName))].length
+  const visibleImages = activeTab === 'All'
+    ? galleryImages
+    : galleryImages.filter((img) => img.category === activeTab)
+
+  const downloadImage = async (item) => {
+    try {
+      const response = await fetch(item.imageUrl)
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `trygpt-community-${item.category.toLowerCase()}-${item.userName}.jpg`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch {
+      window.open(item.imageUrl, '_blank')
+    }
+  }
+
+  const shareImage = async (item) => {
+    try {
+      await navigator.clipboard.writeText(item.imageUrl)
+    } catch {
+      window.open(item.imageUrl, '_blank')
+    }
+  }
 
   return (
     <div className={`flex flex-col h-full overflow-y-auto ${isDark ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
@@ -85,7 +117,7 @@ const Community = () => {
           <div className="flex items-center gap-2">
             <span className="text-lg">🖼️</span>
             <span className={`text-sm ${isDark ? 'text-white/50' : 'text-gray-600'}`}>
-              <strong className={isDark ? 'text-white' : 'text-gray-900'}>{galleryImages.length}</strong> images
+              <strong className={isDark ? 'text-white' : 'text-gray-900'}>{visibleImages.length}</strong> images
             </span>
           </div>
           <div className={`w-px h-4 ${isDark ? 'bg-white/20' : 'bg-gray-300'}`}></div>
@@ -127,7 +159,7 @@ const Community = () => {
       {/* Image Grid - Masonry */}
       <div className="flex-1 px-4 md:px-8 pb-12">
         <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 max-w-7xl mx-auto">
-          {galleryImages.map((item, i) => (
+          {visibleImages.map((item, i) => (
             <div
               key={i}
               className="break-inside-avoid mb-4 opacity-0 animate-[fadeInUp_0.5s_ease_forwards]"
@@ -208,12 +240,20 @@ const Community = () => {
                       : 'opacity-0 scale-90'
                   }`}
                 >
-                  <button className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-colors cursor-pointer">
+                  <button
+                    onClick={() => downloadImage(item)}
+                    className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-colors cursor-pointer"
+                    title="Download image"
+                  >
                     <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                   </button>
-                  <button className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-colors cursor-pointer">
+                  <button
+                    onClick={() => shareImage(item)}
+                    className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-colors cursor-pointer"
+                    title="Copy image link"
+                  >
                     <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                     </svg>

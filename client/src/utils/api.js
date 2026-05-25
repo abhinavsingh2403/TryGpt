@@ -10,39 +10,53 @@ const getHeaders = () => {
     };
 };
 
+const readJson = async (res) => {
+    const text = await res.text();
+    if (!text) return {};
+    try {
+        return JSON.parse(text);
+    } catch {
+        return { message: text };
+    }
+};
+
 export const api = {
     // Auth
-    register: async (data) => {
+    register: async (payload) => {
         const res = await fetch(`${API_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
+            body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error((await res.json()).message || 'Registration failed');
-        return res.json();
+        const data = await readJson(res);
+        if (!res.ok) throw new Error(data.message || 'Registration failed');
+        return data;
     },
 
-    login: async (data) => {
+    login: async (payload) => {
         const res = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
+            body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error((await res.json()).message || 'Login failed');
-        return res.json();
+        const data = await readJson(res);
+        if (!res.ok) throw new Error(data.message || 'Login failed');
+        return data;
     },
 
     getMe: async () => {
         const res = await fetch(`${API_URL}/auth/me`, { headers: getHeaders() });
-        if (!res.ok) throw new Error('Failed to fetch user');
-        return res.json();
+        const data = await readJson(res);
+        if (!res.ok) throw new Error(data.message || 'Failed to fetch user');
+        return data;
     },
 
     // Chats
     getChats: async () => {
         const res = await fetch(`${API_URL}/chats`, { headers: getHeaders() });
-        if (!res.ok) throw new Error('Failed to fetch chats');
-        return res.json();
+        const data = await readJson(res);
+        if (!res.ok) throw new Error(data.message || 'Failed to fetch chats');
+        return data;
     },
 
     createChat: async (name) => {
@@ -51,18 +65,20 @@ export const api = {
             headers: getHeaders(),
             body: JSON.stringify({ name }),
         });
-        if (!res.ok) throw new Error('Failed to create chat');
-        return res.json();
+        const data = await readJson(res);
+        if (!res.ok) throw new Error(data.message || 'Failed to create chat');
+        return data;
     },
 
-    updateChat: async (id, data) => {
+    updateChat: async (id, payload) => {
         const res = await fetch(`${API_URL}/chats/${id}`, {
             method: 'PUT',
             headers: getHeaders(),
-            body: JSON.stringify(data),
+            body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error('Failed to update chat');
-        return res.json();
+        const responseData = await readJson(res);
+        if (!res.ok) throw new Error(responseData.message || 'Failed to update chat');
+        return responseData;
     },
 
     deleteChat: async (id) => {
@@ -70,8 +86,9 @@ export const api = {
             method: 'DELETE',
             headers: getHeaders(),
         });
-        if (!res.ok) throw new Error('Failed to delete chat');
-        return res.json();
+        const data = await readJson(res);
+        if (!res.ok) throw new Error(data.message || 'Failed to delete chat');
+        return data;
     },
 
     // PDF Extraction
@@ -85,8 +102,9 @@ export const api = {
             },
             body: formData,
         })
-        if (!response.ok) throw new Error((await response.json()).message || 'Failed to extract PDF')
-        return response.json()
+        const data = await readJson(response)
+        if (!response.ok) throw new Error(data.message || 'Failed to extract PDF')
+        return data
     },
 
     // AI Stream
@@ -100,7 +118,7 @@ export const api = {
             });
 
             if (!res.ok) {
-                const error = await res.json();
+                const error = await readJson(res);
                 throw new Error(error.message || 'AI Generation failed');
             }
 

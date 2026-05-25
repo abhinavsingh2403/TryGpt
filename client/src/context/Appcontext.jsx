@@ -81,8 +81,14 @@ export const AppContextProvider = ({ children }) => {
         const fetchuserchats = async () => {
             try {
                 const data = await api.getChats()
-                setChats(data)
-                if (data.length > 0) setSelectedChat(data[0])
+                if (data.length > 0) {
+                    setChats(data)
+                    setSelectedChat(data[0])
+                } else {
+                    const newChat = await api.createChat('New Chat')
+                    setChats([newChat])
+                    setSelectedChat(newChat)
+                }
             } catch (err) {
                 console.error('Failed to load chats:', err)
             }
@@ -247,7 +253,11 @@ export const AppContextProvider = ({ children }) => {
         if (isImageRequest) {
             // Save user message to DB first
             if (updatedChat._id) {
-                await api.updateChat(updatedChat._id, updatedChat)
+                try {
+                    await api.updateChat(updatedChat._id, updatedChat)
+                } catch (error) {
+                    console.warn('Failed to save image prompt before generation:', error)
+                }
             }
             // Use local engine for image generation (Pollinations AI)
             const { response, isImage, delay } = await generateAIResponse(text.trim())

@@ -11,13 +11,13 @@ export function exportAsMarkdown(chat) {
     md += `> Exported from TryGPT on ${date}\n\n---\n\n`
 
     for (const msg of chat.messages) {
-        const role = msg.role === 'user' ? '🧑 **You**' : '🤖 **TryGPT**'
+        const role = msg.role === 'user' ? 'You' : 'TryGPT'
         const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-        md += `### ${role} — ${time}\n\n`
+        md += `### ${role} - ${time}\n\n`
 
         if (msg.isImage) {
-            md += `*[AI Generated Image]*\n\n`
+            md += `![AI Generated Image](${msg.content})\n\n`
         } else {
             md += `${msg.content}\n\n`
         }
@@ -44,12 +44,12 @@ export function exportAsText(chat) {
         txt += `[${time}] ${role}:\n`
 
         if (msg.isImage) {
-            txt += `[AI Generated Image]\n`
+            txt += `[AI Generated Image]\n${msg.content}\n`
         } else {
             txt += `${msg.content}\n`
         }
 
-        txt += `\n${'─'.repeat(40)}\n\n`
+        txt += `\n${'-'.repeat(40)}\n\n`
     }
 
     return txt

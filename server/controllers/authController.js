@@ -3,20 +3,37 @@ import User from '../models/userModel.js';
 
 // Generate JWT Token
 const generateToken = (id) => {
+    if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET is not configured');
+    }
+
     return jwt.sign({ id }, process.env.JWT_SECRET, {
         expiresIn: '30d',
     });
 };
+
+const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
 export const registerUser = async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const name = String(req.body.name || '').trim();
+        const email = normalizeEmail(req.body.email);
+        const password = String(req.body.password || '');
 
         if (!name || !email || !password) {
             return res.status(400).json({ message: 'Please add all fields' });
+        }
+
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: 'Please enter a valid email address' });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ message: 'Password must be at least 6 characters' });
         }
 
         // Check if user exists
@@ -54,7 +71,12 @@ export const registerUser = async (req, res) => {
 // @access  Public
 export const loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const email = normalizeEmail(req.body.email);
+        const password = String(req.body.password || '');
+
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Please add email and password' });
+        }
 
         // Check for user email
         const user = await User.findOne({ email });
