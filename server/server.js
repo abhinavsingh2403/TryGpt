@@ -22,8 +22,8 @@ const app = express();
 
 // Connect to Database outside tests when a usable URI is configured.
 if (process.env.NODE_ENV !== 'test' && process.env.MONGODB_URI && process.env.MONGODB_URI !== 'mongodb://localhost:27017/trygpt') {
-    connectDB().catch(() => {
-        process.exit(1);
+    connectDB().catch((err) => {
+        console.error('Failed to connect to MongoDB on startup:', err);
     });
 } else {
     if (process.env.NODE_ENV !== 'test') {
