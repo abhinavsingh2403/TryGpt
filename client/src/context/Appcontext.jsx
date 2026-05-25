@@ -298,11 +298,26 @@ export const AppContextProvider = ({ children }) => {
                                 finalResponse = fullText
                                 resolve()
                             },
-                            (err) => reject(err)
+                            (error) => {
+                                console.error('Streaming error:', error)
+                                const assistantMsg = { 
+                                    isImage: false, 
+                                    isPublished: false, 
+                                    role: 'assistant', 
+                                    content: `⚠️ **Server Error**: ${error.message}\n\nPlease check your server logs or try again.`, 
+                                    timestamp: Date.now() 
+                                }
+                                const chatWithResponse = { ...updatedChat, messages: [...updatedChat.messages, assistantMsg], updatedAt: new Date().toISOString() }
+                                setSelectedChat(chatWithResponse)
+                                setChats(prev => prev.map(c => c._id === chatWithResponse._id ? chatWithResponse : c))
+                                setIsStreaming(false)
+                                setStreamingText('')
+                                resolve()
+                            }
                         )
                     })
 
-                    if (!controller.signal.aborted) {
+                    if (!controller.signal.aborted && finalResponse) {
                         const assistantMsg = { isImage: false, isPublished: false, role: 'assistant', content: finalResponse, timestamp: Date.now() }
                         const chatWithResponse = { ...updatedChat, messages: [...updatedChat.messages, assistantMsg], updatedAt: new Date().toISOString() }
                         setSelectedChat(chatWithResponse)
