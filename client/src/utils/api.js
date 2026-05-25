@@ -20,6 +20,19 @@ const readJson = async (res) => {
     }
 };
 
+const createApiError = (message, status) => {
+    const error = new Error(message);
+    error.status = status;
+    if (status === 429 || /quota|rate limit|too many requests|free tier/i.test(message)) {
+        error.code = 'RATE_LIMIT';
+    } else if (/missing gemini api key|api key/i.test(message)) {
+        error.code = 'MISSING_API_KEY';
+    } else {
+        error.code = 'API_ERROR';
+    }
+    return error;
+};
+
 export const api = {
     // Auth
     register: async (payload) => {
@@ -119,7 +132,7 @@ export const api = {
 
             if (!res.ok) {
                 const error = await readJson(res);
-                throw new Error(error.message || 'AI Generation failed');
+                throw createApiError(error.message || 'AI Generation failed', res.status);
             }
 
             const reader = res.body.getReader();

@@ -6,7 +6,7 @@ import Message, { TypingIndicator, StreamingMessage, AIThinkingIndicator } from 
 const Chatbox = () => {
   const {
     selectedChat, sendMessage, isTyping, isThinking, isStreaming, streamingText, stopStreaming,
-    user, setSidebarOpen, createNewChat, theme, apiKeyStatus
+    user, setSidebarOpen, createNewChat, theme, apiStatus
   } = useAppContext()
   const [input, setInput] = useState('')
   const [attachment, setAttachment] = useState(null)
@@ -144,7 +144,13 @@ const Chatbox = () => {
   ]
 
   const imageCount = selectedChat?.messages?.filter(m => m.isImage)?.length || 0
-  const isGeminiActive = apiKeyStatus === 'configured'
+  const isGeminiActive = apiStatus === 'ready' || apiStatus === 'online'
+  const statusLabel = apiStatus === 'limited' ? 'Fallback Ready' : apiStatus === 'fallback' ? 'Local Mode' : 'Gemini AI'
+  const statusHelp = apiStatus === 'limited'
+    ? 'Gemini is rate-limited, so TryGPT is using polished local fallback responses.'
+    : apiStatus === 'fallback'
+      ? 'Live AI is unavailable, so TryGPT is using local fallback responses.'
+      : 'Powered by Gemini AI with local fallback available.'
 
   return (
     <div className="flex flex-col h-screen relative">
@@ -182,9 +188,10 @@ const Chatbox = () => {
             ${isGeminiActive
               ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
               : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-            }`}>
+            }`}
+            title={statusHelp}>
             <div className={`w-1.5 h-1.5 rounded-full ${isGeminiActive ? 'bg-emerald-400' : 'bg-amber-400'} animate-pulse`}></div>
-            {isGeminiActive ? 'Gemini AI' : 'Offline Mode'}
+            {statusLabel}
           </div>
         </div>
       </div>
@@ -211,7 +218,7 @@ const Chatbox = () => {
             {!isGeminiActive && (
               <div className={`mb-6 px-4 py-2 rounded-xl text-xs flex items-center gap-2 max-w-md ${isDark ? 'bg-amber-500/10 text-amber-300 border border-amber-500/15' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
                 <span>⚡</span>
-                <span>Add a <strong>Gemini API key</strong> in Settings for real AI responses. Currently using built-in offline mode.</span>
+                <span>{statusHelp}</span>
               </div>
             )}
 
@@ -352,7 +359,7 @@ const Chatbox = () => {
           </div>
 
           <p className={`text-[10px] text-center mt-2 ${isDark ? 'text-white/20' : 'text-gray-400'}`}>
-            {isGeminiActive ? 'Powered by Gemini AI' : 'Offline mode — add API key in Settings for real AI'} · TryGPT can make mistakes.
+            {statusHelp} · TryGPT can make mistakes.
           </p>
         </div>
       </div>

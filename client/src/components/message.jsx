@@ -73,7 +73,7 @@ const Message = ({ message }) => {
                 onClick={() => copyToClipboard(code)}
                 className="text-xs px-3 py-1 rounded-md bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25 transition-all cursor-pointer"
               >
-                {copied ? '✓ Copied!' : '📋 Copy'}
+                {copied ? 'Copied' : 'Copy'}
               </button>
             </div>
             <pre className="bg-[#1e1e2e] p-4 overflow-x-auto border border-purple-500/20 border-t-0 rounded-b-xl">
@@ -266,7 +266,7 @@ const Message = ({ message }) => {
           />
           {message.isPublished && imageLoaded && (
             <div className="absolute top-3 left-3 bg-emerald-500/90 text-white text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm font-medium shadow-lg">
-              ✓ Published
+              Published
             </div>
           )}
           {imageLoaded && (
@@ -323,7 +323,7 @@ const Message = ({ message }) => {
             {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
 
-          {/* Action buttons — visible on hover */}
+          {/* Action buttons visible on hover */}
           {!isUser && (
             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
               <button
@@ -342,18 +342,18 @@ const Message = ({ message }) => {
                 )}
               </button>
               {/* Reaction buttons */}
-              {['👍', '👎'].map((emoji) => (
+              {['+', '-'].map((reactionValue) => (
                 <button
-                  key={emoji}
-                  onClick={() => setReaction(reaction === emoji ? null : emoji)}
+                  key={reactionValue}
+                  onClick={() => setReaction(reaction === reactionValue ? null : reactionValue)}
                   className={`p-1 rounded-md transition-all cursor-pointer text-xs
-                    ${reaction === emoji
+                    ${reaction === reactionValue
                       ? 'bg-violet-500/20 scale-110'
                       : isDark ? 'hover:bg-white/10' : 'hover:bg-gray-200'
                     }`}
-                  title={emoji === '👍' ? 'Good response' : 'Bad response'}
+                  title={reactionValue === '+' ? 'Good response' : 'Bad response'}
                 >
-                  {emoji}
+                  {reactionValue}
                 </button>
               ))}
             </div>

@@ -44,7 +44,7 @@ export const AppContextProvider = ({ children }) => {
     const [streamingText, setStreamingText] = useState('')
     const [isStreaming, setIsStreaming] = useState(false)
     const [settings, setSettings] = useState(loadSettings)
-    const [apiKeyStatus] = useState('configured') // Always configured since backend handles it
+    const [apiStatus, setApiStatus] = useState('ready')
     const [pinnedChats, setPinnedChats] = useState(() => {
         try { return JSON.parse(localStorage.getItem('trygpt-pinned') || '[]') } catch { return [] }
     })
@@ -160,8 +160,8 @@ export const AppContextProvider = ({ children }) => {
 
     // ======= CORE: Send Message with Gemini API + Local Fallback =======
     // Local AI engine fallback with simulated streaming
-    const fallbackToLocal = useCallback(async (text, updatedChat) => {
-        const { response, isImage, delay } = await generateAIResponse(text)
+    const fallbackToLocal = useCallback(async (text, updatedChat, reason = '') => {
+        const { response, isImage, delay } = await generateAIResponse(text, { reason })
 
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -307,23 +307,12 @@ export const AppContextProvider = ({ children }) => {
                             },
                             (fullText) => {
                                 finalResponse = fullText
+                                setApiStatus('online')
                                 resolve()
                             },
                             (error) => {
                                 console.error('Streaming error:', error)
-                                const assistantMsg = { 
-                                    isImage: false, 
-                                    isPublished: false, 
-                                    role: 'assistant', 
-                                    content: `⚠️ **Server Error**: ${error.message}\n\nPlease check your server logs or try again.`, 
-                                    timestamp: Date.now() 
-                                }
-                                const chatWithResponse = { ...updatedChat, messages: [...updatedChat.messages, assistantMsg], updatedAt: new Date().toISOString() }
-                                setSelectedChat(chatWithResponse)
-                                setChats(prev => prev.map(c => c._id === chatWithResponse._id ? chatWithResponse : c))
-                                setIsStreaming(false)
-                                setStreamingText('')
-                                resolve()
+                                reject(error)
                             },
                             controller.signal
                         )
@@ -345,7 +334,7 @@ export const AppContextProvider = ({ children }) => {
                             updatedChat.messages,
                             settings.personality,
                             () => {},
-                            (fullText) => { finalResponse = fullText; resolve() },
+                            (fullText) => { finalResponse = fullText; setApiStatus('online'); resolve() },
                             (err) => reject(err),
                             controller.signal
                         )
@@ -359,9 +348,11 @@ export const AppContextProvider = ({ children }) => {
                     }
                 }
             } catch (error) {
-                console.warn('Gemini API failed, falling back to local engine:', error.message)
-                // Fallback to local engine
-                await fallbackToLocal(text.trim(), updatedChat)
+                if (!controller.signal.aborted) {
+                    console.warn('Gemini API failed, falling back to local engine:', error.message)
+                    setApiStatus(error.code === 'RATE_LIMIT' ? 'limited' : 'fallback')
+                    await fallbackToLocal(text.trim(), updatedChat, error.message)
+                }
             } finally {
                 abortControllerRef.current = null
                 setIsStreaming(false)
@@ -371,6 +362,7 @@ export const AppContextProvider = ({ children }) => {
             }
         } else {
             // Use local AI engine
+            setApiStatus('fallback')
             await fallbackToLocal(text.trim(), updatedChat)
         }
     }, [isTyping, settings, fallbackToLocal])
@@ -417,6 +409,7 @@ export const AppContextProvider = ({ children }) => {
                         },
                         (fullText) => {
                             finalResponse = fullText
+                            setApiStatus('online')
                             resolve()
                         },
                         (err) => reject(err),
@@ -431,8 +424,11 @@ export const AppContextProvider = ({ children }) => {
                     setChats(prev => prev.map(c => c._id === chatWithResponse._id ? chatWithResponse : c))
                     if (chatWithResponse._id) await api.updateChat(chatWithResponse._id, chatWithResponse)
                 }
-            } catch {
-                await fallbackToLocal(userMsg.content, truncatedChat)
+            } catch (error) {
+                if (!controller.signal.aborted) {
+                    setApiStatus(error.code === 'RATE_LIMIT' ? 'limited' : 'fallback')
+                    await fallbackToLocal(userMsg.content, truncatedChat, error.message)
+                }
             } finally {
                 abortControllerRef.current = null
                 setIsStreaming(false)
@@ -440,6 +436,7 @@ export const AppContextProvider = ({ children }) => {
                 setIsTyping(false)
             }
         } else {
+            setApiStatus('fallback')
             await fallbackToLocal(userMsg.content, truncatedChat)
         }
     }, [isTyping, settings, fallbackToLocal])
@@ -464,7 +461,7 @@ export const AppContextProvider = ({ children }) => {
         createNewChat, deleteChat, sendMessage, editMessage,
         regenerateResponse, stopStreaming, logout, login,
         settings, updateSettings, pinnedChats, togglePinChat, clearAllChats,
-        apiKeyStatus,
+        apiStatus,
     }
 
     return (
