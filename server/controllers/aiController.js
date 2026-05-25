@@ -149,7 +149,22 @@ export const generateResponse = async (req, res) => {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('Gemini API Error:', errorText);
-                return res.status(response.status).json({ message: `Gemini API Error: ${errorText}` });
+                let cleanMessage = 'AI Generation failed';
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    if (errorJson.error && errorJson.error.message) {
+                        cleanMessage = errorJson.error.message;
+                    }
+                } catch (e) {
+                    cleanMessage = errorText;
+                }
+                
+                // Add a friendly message if it's a rate limit
+                if (cleanMessage.includes('exceeded your current quota') || response.status === 429) {
+                    cleanMessage = "You have exceeded the free tier rate limit for Gemini API (15 requests per minute). Please wait a few seconds and try again.";
+                }
+
+                return res.status(response.status).json({ message: cleanMessage });
             }
 
             // Set headers for Server-Sent Events
@@ -201,7 +216,21 @@ export const generateResponse = async (req, res) => {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('Gemini API Error:', errorText);
-                return res.status(response.status).json({ message: `Gemini API Error: ${errorText}` });
+                let cleanMessage = 'AI Generation failed';
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    if (errorJson.error && errorJson.error.message) {
+                        cleanMessage = errorJson.error.message;
+                    }
+                } catch (e) {
+                    cleanMessage = errorText;
+                }
+                
+                if (cleanMessage.includes('exceeded your current quota') || response.status === 429) {
+                    cleanMessage = "You have exceeded the free tier rate limit for Gemini API (15 requests per minute). Please wait a few seconds and try again.";
+                }
+
+                return res.status(response.status).json({ message: cleanMessage });
             }
 
             const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
