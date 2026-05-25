@@ -281,6 +281,31 @@ export const dummyChats = [
 ]
 
 export const dummyPublishedImages = [
+    { imageUrl: "https://image.pollinations.ai/prompt/Cyberpunk%20city%20glowing%20at%20night%20with%20neon%20signs?width=512&height=512&nologo=true", userName: "NeonVisions" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20majestic%20lion%20made%20entirely%20of%20water?width=512&height=512&nologo=true", userName: "ArtfulMind" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20futuristic%20space%20station%20orbiting%20a%20purple%20planet?width=512&height=512&nologo=true", userName: "CosmicBrush" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20serene%20Japanese%20zen%20garden%20in%20autumn?width=512&height=512&nologo=true", userName: "PixelDreamer" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20steampunk%20owl%20with%20glowing%20mechanical%20eyes?width=512&height=512&nologo=true", userName: "DreamForge" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20highly%20detailed%20portrait%20of%20a%20female%20cyborg%20warrior?width=512&height=512&nologo=true", userName: "VisualPoet" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20mystical%20forest%20with%20glowing%20mushrooms%20and%20fairies?width=512&height=512&nologo=true", userName: "ChromaWave" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20crystal%20clear%20ocean%20wave%20crashing%20under%20a%20starlit%20sky?width=512&height=512&nologo=true", userName: "LuminStudio" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20sports%20car%20driving%20through%20a%20neon%20lit%20synthwave%20tunnel?width=512&height=512&nologo=true", userName: "DigitalMuse" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20hyperrealistic%20astronaut%20floating%20in%20deep%20space?width=512&height=512&nologo=true", userName: "AetherArt" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20magical%20floating%20island%20with%20a%20castle%20in%20the%20clouds?width=512&height=512&nologo=true", userName: "VividSpark" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20close%20up%20of%20a%20beautiful%20bioluminescent%20jellyfish?width=512&height=512&nologo=true", userName: "ArtfulMind" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20towering%20ancient%20tree%20with%20cities%20built%20into%20its%20branches?width=512&height=512&nologo=true", userName: "DreamForge" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20dramatic%20volcanic%20eruption%20seen%20from%20space?width=512&height=512&nologo=true", userName: "CosmicBrush" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20cute%20robotic%20dog%20playing%20in%20a%20park?width=512&height=512&nologo=true", userName: "PixelDreamer" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20fantasy%20tavern%20interior%20with%20warm%20glowing%20firelight?width=512&height=512&nologo=true", userName: "VisualPoet" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20majestic%20dragon%20flying%20over%20a%20snowy%20mountain%20peak?width=512&height=512&nologo=true", userName: "NeonVisions" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20futuristic%20cityscape%20with%20flying%20cars%20and%20tall%20glass%20skyscrapers?width=512&height=512&nologo=true", userName: "ChromaWave" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20realistic%20portrait%20of%20an%20old%20wizard%20with%20a%20glowing%20staff?width=512&height=512&nologo=true", userName: "LuminStudio" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20cyberpunk%20street%20vendor%20cooking%20noodles%20in%20the%20rain?width=512&height=512&nologo=true", userName: "DigitalMuse" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20surreal%20landscape%20with%20floating%20geometric%20shapes?width=512&height=512&nologo=true", userName: "AetherArt" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20highly%20detailed%20macro%20shot%20of%20a%20metallic%20beetle?width=512&height=512&nologo=true", userName: "VividSpark" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20beautiful%20ethereal%20goddess%20of%20nature?width=512&height=512&nologo=true", userName: "DreamForge" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20retro-futuristic%20spaceship%20landing%20on%20Mars?width=512&height=512&nologo=true", userName: "CosmicBrush" },
+    { imageUrl: "https://image.pollinations.ai/prompt/A%20dramatic%20cinematic%20shot%20of%20a%20samurai%20standing%20in%20a%20bamboo%20forest?width=512&height=512&nologo=true", userName: "ArtfulMind" },
     {
         "imageUrl": ai_image11,
         "userName": "GreatStack"
