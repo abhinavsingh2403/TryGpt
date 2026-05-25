@@ -54,7 +54,7 @@ export const updateChat = async (req, res) => {
         const updatedChat = await Chat.findByIdAndUpdate(
             req.params.id,
             allowedUpdates,
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         res.status(200).json(updatedChat);
