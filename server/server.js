@@ -65,6 +65,10 @@ app.use('/api/chats', chatRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/pdf', pdfRoutes);
 
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Backend is running!', vercel: !!process.env.VERCEL });
+});
+
 // Serve Frontend in Production
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../client/dist')));
@@ -92,7 +96,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
     app.listen(PORT, () => {
         console.log(`🚀 Server running on port ${PORT}`);
     });
