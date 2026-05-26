@@ -14,6 +14,13 @@ import pdfRoutes from './routes/pdfRoutes.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+process.on('uncaughtException', (err) => {
+    console.error('UNCAUGHT EXCEPTION:', err);
+});
+process.on('unhandledRejection', (err) => {
+    console.error('UNHANDLED REJECTION:', err);
+});
+
 // Load environment variables without letting .env override Jest's NODE_ENV=test.
 dotenv.config({ override: false });
 
