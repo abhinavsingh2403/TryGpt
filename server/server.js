@@ -1,5 +1,4 @@
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -9,7 +8,6 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
-import pdfRoutes from './routes/pdfRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,20 +19,27 @@ process.on('unhandledRejection', (err) => {
     console.error('UNHANDLED REJECTION:', err);
 });
 
-// Load environment variables without letting .env override Jest's NODE_ENV=test.
-dotenv.config({ override: false });
+// Load environment variables from .env file (only locally, not on Vercel)
+if (!process.env.VERCEL) {
+    try {
+        const dotenv = await import('dotenv');
+        dotenv.config({ override: false });
+    } catch (e) {
+        // dotenv not available, that's fine on Vercel
+    }
+}
 
 // Initialize Express
 const app = express();
 
-// Connect to Database outside tests when a usable URI is configured.
-if (process.env.NODE_ENV !== 'test' && process.env.MONGODB_URI && process.env.MONGODB_URI !== 'mongodb://localhost:27017/trygpt') {
+// Connect to Database
+if (process.env.NODE_ENV !== 'test' && process.env.MONGODB_URI) {
     connectDB().catch((err) => {
         console.error('Failed to connect to MongoDB on startup:', err);
     });
 } else {
     if (process.env.NODE_ENV !== 'test') {
-        console.warn('[WARNING] No custom MONGODB_URI found in .env. Skipping DB connection for now.');
+        console.warn('[WARNING] MONGODB_URI not found. Skipping DB connection.');
     }
 }
 
@@ -49,8 +54,8 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Rate Limiting
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     message: { message: 'Too many requests from this IP, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
@@ -61,7 +66,17 @@ app.use('/api/', apiLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/ai', aiRoutes);
-app.use('/api/pdf', pdfRoutes);
+
+// PDF routes loaded dynamically because pdf-parse crashes Vercel on import
+try {
+    const pdfModule = await import('./routes/pdfRoutes.js');
+    app.use('/api/pdf', pdfModule.default);
+} catch (e) {
+    console.error('PDF routes failed to load (non-fatal):', e.message);
+    app.use('/api/pdf', (req, res) => {
+        res.status(503).json({ message: 'PDF processing is temporarily unavailable.' });
+    });
+}
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Backend is running!', vercel: !!process.env.VERCEL });
