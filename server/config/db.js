@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 
-mongoose.set('bufferCommands', false);
+// Enable buffering so Mongoose doesn't throw immediate 'bufferCommands = false' errors
+// if queries are executed during a reconnect phase.
+mongoose.set('bufferCommands', true);
 
 let cached = global.__mongooseConnection;
 if (!cached) {
@@ -9,13 +11,23 @@ if (!cached) {
 
 const connectDB = async () => {
     // If already connected, return immediately
-    if (cached.conn && mongoose.connection.readyState === 1) {
-        return cached.conn;
+    if (mongoose.connection.readyState === 1) {
+        return mongoose.connection;
     }
 
-    // If a connection attempt is in progress, wait for it
+    // In serverless environments, if a connection was established in a previous
+    // invocation but has since timed out or disconnected, clear the cache.
+    if (mongoose.connection.readyState === 0 || mongoose.connection.readyState === 3) {
+        cached.promise = null;
+        cached.conn = null;
+    }
+
+    // If a connection attempt is not in progress, start one
     if (!cached.promise) {
-        cached.promise = mongoose.connect(process.env.MONGODB_URI).then((m) => {
+        const opts = {
+            bufferCommands: true,
+        };
+        cached.promise = mongoose.connect(process.env.MONGODB_URI, opts).then((m) => {
             console.log(`MongoDB Connected: ${m.connection.host}`);
             return m;
         }).catch((error) => {

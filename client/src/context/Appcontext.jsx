@@ -259,7 +259,7 @@ export const AppContextProvider = ({ children }) => {
                     console.warn('Failed to save image prompt before generation:', error)
                 }
             }
-            // Use local engine for image generation (Pollinations AI)
+            // Use local engine for image generation (LoremFlickr)
             const { response, isImage, delay } = await generateAIResponse(text.trim())
             setTimeout(async () => {
                 const assistantMsg = { isImage, isPublished: isImage, role: 'assistant', content: response, timestamp: Date.now() }

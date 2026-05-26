@@ -5,7 +5,15 @@ const clean = (text) => String(text || '').trim()
 
 function generateImageResponse(prompt) {
     const cleanPrompt = clean(prompt).replace(/generate|create|make|draw|an image of|a picture of/gi, '').trim() || 'beautiful scenery'
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 1000000)}`
+    // Extract meaningful search terms (words longer than 2 chars, omitting common prepositions/articles)
+    const tags = cleanPrompt
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '') // remove special chars
+        .split(/\s+/)
+        .filter(word => word.length > 2 && !['and', 'the', 'for', 'with', 'a', 'of', 'in', 'on', 'at', 'by', 'an', 'to', 'over', 'under'].includes(word))
+        .join(',');
+
+    const imageUrl = `https://loremflickr.com/1024/1024/${encodeURIComponent(tags || 'scenery')}/all?random=${Math.floor(Math.random() * 1000)}`
 
     return {
         response: imageUrl,

@@ -19,6 +19,6 @@ describe('Auth API', () => {
     // Testing validation is enough to prove the test suite uses the real routes.
 
     afterAll(async () => {
-        await mongoose.connection.close();
+        await mongoose.disconnect();
     });
 });

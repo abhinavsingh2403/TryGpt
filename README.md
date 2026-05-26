@@ -9,7 +9,7 @@ TryGPT is a full-stack AI conversational workspace. It features real-time stream
 - **Real-time AI Streaming**: Utilizes Server-Sent Events (SSE) for fluid, typewriter-style responses from Gemini 2.0 Flash.
 - **True Vector Search Document Chat (RAG)**: Upload PDFs, extract text, automatically chunk and embed the content using Gemini, and perform cosine similarity vector search to answer questions with precise context.
 - **Voice Mode**: Built-in speech recognition for hands-free interaction.
-- **Image Generation**: Generates high-quality images using Pollinations AI.
+- **Image Generation**: Generates high-quality, watermark-free images matching user prompts using LoremFlickr.
 - **Persistent Workspaces**: MongoDB-backed authentication and chat history storage.
 - **Local Fallback Engine**: A robust local AI mock-engine that simulates streaming responses when API keys are unconfigured or unavailable.
 - **Beautiful UI**: Built with React and Tailwind CSS, featuring glassmorphism, fluid animations, and a polished dark mode.
