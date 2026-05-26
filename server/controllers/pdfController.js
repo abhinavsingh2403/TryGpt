@@ -1,6 +1,4 @@
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const pdfParse = require('pdf-parse');
+import pdfParse from 'pdf-parse';
 
 // @desc    Extract text from uploaded PDF, chunk it, and generate embeddings
 // @route   POST /api/pdf/extract
