@@ -32,16 +32,19 @@ if (!process.env.VERCEL) {
 // Initialize Express
 const app = express();
 
-// Connect to Database
-if (process.env.NODE_ENV !== 'test' && process.env.MONGODB_URI) {
-    connectDB().catch((err) => {
-        console.error('Failed to connect to MongoDB on startup:', err);
-    });
-} else {
-    if (process.env.NODE_ENV !== 'test') {
-        console.warn('[WARNING] MONGODB_URI not found. Skipping DB connection.');
+// Middleware: ensure DB is connected before handling any API request
+app.use('/api', async (req, res, next) => {
+    if (!process.env.MONGODB_URI) {
+        return res.status(503).json({ message: 'Database not configured.' });
     }
-}
+    try {
+        await connectDB();
+        next();
+    } catch (err) {
+        console.error('DB connection failed for request:', err.message);
+        return res.status(503).json({ message: 'Database temporarily unavailable.' });
+    }
+});
 
 // Security Middleware
 app.use(helmet());
