@@ -41,9 +41,7 @@ if (process.env.NODE_ENV !== 'test' && process.env.MONGODB_URI && process.env.MO
 // Security Middleware
 app.use(helmet());
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-        ? process.env.CLIENT_URL || 'https://your-production-app.vercel.app'
-        : ['http://localhost:5173', 'http://localhost:3000'],
+    origin: true,
     credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));

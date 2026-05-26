@@ -1,8 +1,8 @@
-import pdfParse from 'pdf-parse';
-
-// @desc    Extract text from uploaded PDF, chunk it, and generate embeddings
+// pdf-parse is imported via lazy wrapper to prevent serverless boot crashes.
 // @route   POST /api/pdf/extract
 // @access  Public
+
+import { parsePdf } from '../utils/pdfParseWrapper.js';
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
@@ -45,7 +45,7 @@ export const extractPdfText = async (req, res) => {
         const dataBuffer = req.file.buffer;
         
         // Parse the PDF buffer
-        const data = await pdfParse(dataBuffer);
+        const data = await parsePdf(req.file.buffer);
         
         // Extract text and clean it up slightly
         let text = data.text.trim();
