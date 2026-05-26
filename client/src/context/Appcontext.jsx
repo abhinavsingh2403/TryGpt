@@ -56,6 +56,12 @@ export const AppContextProvider = ({ children }) => {
     useEffect(() => { localStorage.setItem('trygpt-settings', JSON.stringify(settings)) }, [settings])
     useEffect(() => { localStorage.setItem('trygpt-pinned', JSON.stringify(pinnedChats)) }, [pinnedChats])
 
+    useEffect(() => {
+        // Reset API status when switching chats to allow trying the live API again,
+        // unless Gemini is disabled in settings.
+        setApiStatus(settings.useGemini ? 'ready' : 'fallback')
+    }, [selectedChat?._id, settings.useGemini])
+
     const updateSettings = useCallback((updates) => {
         setSettings(prev => ({ ...prev, ...updates }))
     }, [])
